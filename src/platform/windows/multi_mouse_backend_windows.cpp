@@ -2,7 +2,7 @@
 
 #include "multi_mouse_backend_windows.h"
 
-#include <godot_cpp/classes/utility_functions.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
 
 #include <chrono>
 #include <cstdint>
