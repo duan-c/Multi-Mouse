@@ -2,7 +2,7 @@
 
 #ifdef _WIN32
 
-#include <multi_mouse_backend.h>
+#include "../../multi_mouse_backend.h"
 
 #include <godot_cpp/variant/vector2.hpp>
 
