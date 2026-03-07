@@ -153,6 +153,7 @@ func _draw() -> void:
 
 	var pointer_screen := _pointer_pos + offset
 	var pointer_color := Color(1, 0.8, 0.2) if _pointer_down else Color(0.4, 0.8, 1.0)
-	var pointer_color_with_alpha := pointer_color.with_alpha(0.1)
+	var pointer_color_with_alpha := pointer_color
+	pointer_color_with_alpha.a = 0.1
 	draw_circle(pointer_screen, 12, pointer_color)
 	draw_circle(pointer_screen, POINTER_RADIUS, pointer_color_with_alpha)
