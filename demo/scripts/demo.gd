@@ -20,7 +20,13 @@ func _ready() -> void:
     manager.device_connected.connect(_on_device_connected)
     manager.device_disconnected.connect(_on_device_disconnected)
     label.text = "Devices: %s" % [manager.get_devices()]
-
+	
+	MultiMouse.attach_to_window(0)#hack for now
+	MultiMouse.enable()
+	
+func _exit_tree() -> void:	
+	MultiMouse.disable()
+	
 func _on_motion(event: InputEventMouseMotion) -> void:
     label.text = "Motion from %s: rel=%s" % [event.device, event.relative]
 
