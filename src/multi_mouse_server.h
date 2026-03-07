@@ -32,6 +32,8 @@ public:
 
     TypedArray<Dictionary> get_connected_devices();
     void poll();
+    void enable_backend();
+    void disable_backend();
 
     int32_t register_device(const MultiMouseDeviceInfo &info);
     void unregister_device(int32_t device_id);
@@ -61,6 +63,7 @@ private:
     std::unordered_map<int32_t, Dictionary> _devices;
     std::unordered_map<int32_t, Vector2> _device_positions;
     std::unique_ptr<MultiMouseBackend> _backend;
+    bool _backend_running = false;
 };
 
 } // namespace godot

@@ -6,6 +6,7 @@ signal motion(event: InputEventMouseMotion)
 signal button(event: InputEventMouseButton)
 
 var _server: Object
+var _requested_enabled := false
 
 func _ready() -> void:
     set_process(true)
@@ -15,6 +16,16 @@ func _ready() -> void:
         _emit_existing_devices()
     else:
         push_warning("MultiMouseServer native singleton is not available. Build the GDExtension for your platform.")
+
+func enable() -> void:
+    _requested_enabled = true
+    if _server and _server.has_method("enable_backend"):
+        _server.enable_backend()
+
+func disable() -> void:
+    _requested_enabled = false
+    if _server and _server.has_method("disable_backend"):
+        _server.disable_backend()
 
 func _bind_server_callbacks() -> void:
     if not _server:

@@ -10,27 +10,17 @@ using namespace godot;
 
 MultiMouseServer::MultiMouseServer() {
     _backend = create_multi_mouse_backend(this);
-
-    if (_backend) {
-        _backend->start();
-    } else {
-        MultiMouseDeviceInfo info;
-        info.name = String("Placeholder Mouse");
-        info.system_id = String("placeholder");
-        info.transport = String("stub");
-        register_device(info);
-    }
 }
 
 MultiMouseServer::~MultiMouseServer() {
-    if (_backend) {
-        _backend->stop();
-    }
+    disable_backend();
 }
 
 void MultiMouseServer::_bind_methods() {
     ClassDB::bind_method(D_METHOD("get_connected_devices"), &MultiMouseServer::get_connected_devices);
     ClassDB::bind_method(D_METHOD("poll"), &MultiMouseServer::poll);
+    ClassDB::bind_method(D_METHOD("enable_backend"), &MultiMouseServer::enable_backend);
+    ClassDB::bind_method(D_METHOD("disable_backend"), &MultiMouseServer::disable_backend);
 
     ADD_SIGNAL(MethodInfo("device_connected",
                           PropertyInfo(Variant::INT, "device_id"),
@@ -52,8 +42,22 @@ TypedArray<Dictionary> MultiMouseServer::get_connected_devices() {
 }
 
 void MultiMouseServer::poll() {
-    if (_backend) {
+    if (_backend && _backend_running) {
         _backend->poll();
+    }
+}
+
+void MultiMouseServer::enable_backend() {
+    if (_backend && !_backend_running) {
+        _backend->start();
+        _backend_running = true;
+    }
+}
+
+void MultiMouseServer::disable_backend() {
+    if (_backend && _backend_running) {
+        _backend->stop();
+        _backend_running = false;
     }
 }
 
