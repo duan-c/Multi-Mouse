@@ -1,5 +1,6 @@
 # Build artifacts
 .build/
+build/
 bin/
 *.dll
 *.so
@@ -9,6 +10,10 @@ bin/
 .export/
 .import/
 *.godot
+
+# Submodule outputs
+extern/godot-cpp/bin/
+extern/godot-cpp/.sconsign.dblite
 
 # Editor cruft
 .DS_Store

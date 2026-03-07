@@ -3,8 +3,8 @@ class_name MultiMouse
 
 signal device_connected(device_id: int, info: Dictionary)
 signal device_disconnected(device_id: int)
-signal motion(event: Dictionary)
-signal button(event: Dictionary)
+signal motion(event: InputEventMultiMouseMotion)
+signal button(event: InputEventMultiMouseButton)
 
 var _server: Object
 
@@ -27,7 +27,16 @@ func _bind_server_callbacks() -> void:
 func _emit_existing_devices() -> void:
     if _server and _server.has_method("get_connected_devices"):
         for dev in _server.get_connected_devices():
-            device_connected.emit(dev.device_id, dev)
+            device_connected.emit(int(dev["device_id"]), dev)
+
+func request_poll() -> void:
+    if _server and _server.has_method("poll"):
+        _server.poll()
+
+func get_devices() -> Array:
+    if _server and _server.has_method("get_connected_devices"):
+        return _server.get_connected_devices()
+    return []
 
 func _on_device_connected(device_id: int, info: Dictionary) -> void:
     device_connected.emit(device_id, info)
@@ -35,8 +44,8 @@ func _on_device_connected(device_id: int, info: Dictionary) -> void:
 func _on_device_disconnected(device_id: int) -> void:
     device_disconnected.emit(device_id)
 
-func _on_motion(event: Dictionary) -> void:
+func _on_motion(event: InputEventMultiMouseMotion) -> void:
     motion.emit(event)
 
-func _on_button(event: Dictionary) -> void:
+func _on_button(event: InputEventMultiMouseButton) -> void:
     button.emit(event)

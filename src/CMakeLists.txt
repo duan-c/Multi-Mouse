@@ -6,14 +6,23 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(NOT DEFINED GODOT_CPP_PATH)
-    message(FATAL_ERROR "Set GODOT_CPP_PATH to your godot-cpp checkout (e.g. -DGODOT_CPP_PATH=../godot-cpp)")
+    set(GODOT_CPP_PATH "${CMAKE_SOURCE_DIR}/../extern/godot-cpp" CACHE PATH "Path to godot-cpp checkout" FORCE)
 endif()
 
-add_subdirectory(${GODOT_CPP_PATH} ${CMAKE_BINARY_DIR}/godot-cpp)
+if(NOT EXISTS "${GODOT_CPP_PATH}/include")
+    message(FATAL_ERROR "godot-cpp headers not found in ${GODOT_CPP_PATH}. Did you init the submodule?")
+endif()
+
+set(GODOT_CPP_LIB "" CACHE FILEPATH "Path to the prebuilt godot-cpp static library")
+if(NOT GODOT_CPP_LIB)
+    message(FATAL_ERROR "Set GODOT_CPP_LIB to the built godot-cpp library (e.g. extern/godot-cpp/bin/libgodot-cpp.linux.template_debug.x86_64.a)")
+endif()
 
 add_library(multi_mouse SHARED
     register_types.cpp
     multi_mouse_server.cpp
+    multi_mouse_backend.cpp
+    input_events.cpp
 )
 
 target_include_directories(multi_mouse PRIVATE
@@ -21,8 +30,10 @@ target_include_directories(multi_mouse PRIVATE
     ${GODOT_CPP_PATH}/include/godot_cpp
 )
 
-target_link_libraries(multi_mouse PRIVATE godot-cpp)
+target_link_libraries(multi_mouse PRIVATE ${GODOT_CPP_LIB})
 
-target_compile_definitions(multi_mouse PRIVATE
-    $<$<CONFIG:Debug>:DEBUG>
-)
+if(WIN32)
+    target_link_libraries(multi_mouse PRIVATE user32)
+endif()
+
+install(TARGETS multi_mouse DESTINATION ${CMAKE_SOURCE_DIR}/../addons/multi_mouse/bin)
