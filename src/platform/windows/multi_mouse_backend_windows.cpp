@@ -142,15 +142,15 @@ bool MultiMouseBackendWindows::register_raw_input_window() {
         return false;
     }
 
-    _hwnd = CreateWindowExW(0,
+    _hwnd = CreateWindowExW(WS_EX_NOACTIVATE,
                             kWindowClassName,
                             L"Multi-Mouse Raw Input",
+                            WS_OVERLAPPED,
                             0,
                             0,
                             0,
                             0,
-                            0,
-                            HWND_MESSAGE,
+                            nullptr,
                             nullptr,
                             instance,
                             this);
@@ -169,6 +169,7 @@ bool MultiMouseBackendWindows::register_raw_input_window() {
         return false;
     }
 
+    ShowWindow(_hwnd, SW_HIDE);
     UtilityFunctions::print("Multi-Mouse: Raw Input window registered");
     return true;
 }
