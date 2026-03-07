@@ -1,5 +1,4 @@
 extends Node
-class_name MultiMouse
 
 signal device_connected(device_id: int, info: Dictionary)
 signal device_disconnected(device_id: int)
