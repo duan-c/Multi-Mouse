@@ -1,6 +1,6 @@
 #ifdef _WIN32
 
-#include "platform/windows/multi_mouse_backend_windows.h"
+#include "multi_mouse_backend_windows.h"
 
 #include "multi_mouse_server.h"
 
