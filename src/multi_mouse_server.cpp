@@ -21,6 +21,7 @@ void MultiMouseServer::_bind_methods() {
     ClassDB::bind_method(D_METHOD("poll"), &MultiMouseServer::poll);
     ClassDB::bind_method(D_METHOD("enable_backend"), &MultiMouseServer::enable_backend);
     ClassDB::bind_method(D_METHOD("disable_backend"), &MultiMouseServer::disable_backend);
+    ClassDB::bind_method(D_METHOD("attach_to_window", "hwnd"), &MultiMouseServer::attach_to_window);
 
     ADD_SIGNAL(MethodInfo("device_connected",
                           PropertyInfo(Variant::INT, "device_id"),
@@ -58,6 +59,12 @@ void MultiMouseServer::disable_backend() {
     if (_backend && _backend_running) {
         _backend->stop();
         _backend_running = false;
+    }
+}
+
+void MultiMouseServer::attach_to_window(uint64_t hwnd) {
+    if (_backend) {
+        _backend->set_target_window(reinterpret_cast<void *>(hwnd));
     }
 }
 

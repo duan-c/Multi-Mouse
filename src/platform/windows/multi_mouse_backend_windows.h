@@ -47,8 +47,10 @@ private:
     void thread_main();
     bool register_raw_input_window();
     bool register_raw_input_devices();
+    bool register_on_hwnd(HWND hwnd);
     void handle_raw_input(HRAWINPUT raw_handle);
     void handle_device_change(HANDLE device, bool arrival);
+    void set_target_window(void *hwnd) override;
     std::string ensure_device_guid(HANDLE device);
     bool query_device_info(HANDLE device, MultiMouseDeviceInfo &out_info, std::string &out_guid) const;
     void enqueue_event(const PendingEvent &event);
@@ -62,6 +64,7 @@ private:
     std::thread _thread;
     std::atomic<bool> _running{false};
     HWND _hwnd = nullptr;
+    HWND _target_hwnd = nullptr;
 
     std::mutex _queue_mutex;
     std::vector<PendingEvent> _queue;

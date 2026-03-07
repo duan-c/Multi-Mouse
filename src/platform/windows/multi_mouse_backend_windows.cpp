@@ -430,11 +430,43 @@ uint32_t MultiMouseBackendWindows::update_button_mask(const std::string &guid, i
 }
 
 void MultiMouseBackendWindows::cleanup_window() {
-    if (_hwnd) {
+    if (_hwnd && !_target_hwnd) {
         DestroyWindow(_hwnd);
-        _hwnd = nullptr;
+        UnregisterClassW(kWindowClassName, GetModuleHandleW(nullptr));
     }
-    UnregisterClassW(kWindowClassName, GetModuleHandleW(nullptr));
+    _hwnd = nullptr;
+}
+
+void MultiMouseBackendWindows::set_target_window(void *hwnd) {
+    _target_hwnd = reinterpret_cast<HWND>(hwnd);
+}
+
+
+bool MultiMouseBackendWindows::register_raw_input_devices() {
+    if (!_hwnd) {
+        return false;
+    }
+
+    RAWINPUTDEVICE rid{};
+    rid.usUsagePage = HID_USAGE_PAGE_GENERIC;
+    rid.usUsage = HID_USAGE_GENERIC_MOUSE;
+    rid.dwFlags = RIDEV_INPUTSINK | RIDEV_DEVNOTIFY;
+    rid.hwndTarget = _hwnd;
+
+    if (!RegisterRawInputDevices(&rid, 1, sizeof(rid))) {
+        DWORD err = GetLastError();
+        UtilityFunctions::printerr("Multi-Mouse: RegisterRawInputDevices failed", int(err));
+        return false;
+    }
+
+    return true;
+}
+
+bool MultiMouseBackendWindows::register_on_hwnd(HWND hwnd) {
+    _hwnd = hwnd;
+    SetWindowLongPtrW(_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+    UtilityFunctions::print("Multi-Mouse: attached to window", (int64_t)hwnd);
+    return register_raw_input_devices();
 }
 
 } // namespace godot

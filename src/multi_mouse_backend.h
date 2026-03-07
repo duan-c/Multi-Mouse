@@ -16,6 +16,8 @@ public:
     virtual void stop() {}
     virtual void poll() {}
 
+    virtual void set_target_window(void * /*hwnd*/) {}
+
 protected:
     MultiMouseServer *server = nullptr;
 };
