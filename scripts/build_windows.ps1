@@ -17,7 +17,7 @@ if (-not (Test-Path $GodotCpp)) {
 Push-Location $GodotCpp
 try {
     Write-Host "Building godot-cpp ($Target)..."
-    & scons platform=windows target=$Target bits=64 -j8
+    & scons platform=windows target=$Target bits=64 generate_bindings=yes -j8
 }
 finally {
     Pop-Location

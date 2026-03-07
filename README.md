@@ -81,9 +81,10 @@ strongly-typed events (`InputEventMultiMouseMotion`, `InputEventMultiMouseButton
 cp build/linux/libmulti_mouse.so addons/multi_mouse/bin/linux/libmulti_mouse.linux.template_debug.x86_64.so
 ```
 
-On Windows/macOS the flow is similar: build `godot-cpp` with SCons for your
-platform/target, run CMake with `-DGODOT_CPP_LIB` pointing at the generated
-static library, then copy the produced DLL/Dylib/SO into `addons/multi_mouse/bin/...`.
+On Windows/macOS the flow is similar: run the helper script (or manual commands)
+which first calls SCons with `generate_bindings=yes` to populate `gen/include/`
+and only then invokes CMake with `-DGODOT_CPP_LIB` pointing at the generated
+static library. Copy the produced DLL/Dylib/SO into `addons/multi_mouse/bin/...`.
 
 ### Windows backend status
 The native layer now spins up a hidden Raw Input window, discovers each physical

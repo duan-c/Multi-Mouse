@@ -13,7 +13,7 @@ if [[ ! -d "$GODOT_CPP_DIR" ]]; then
 fi
 
 pushd "$GODOT_CPP_DIR" >/dev/null
-scons platform=linux target=$TARGET bits=64 -j"$(nproc)"
+scons platform=linux target=$TARGET bits=64 generate_bindings=yes -j"$(nproc)"
 popd >/dev/null
 
 LIB_PATH="$GODOT_CPP_DIR/bin/libgodot-cpp.linux.${TARGET}.${ARCH}.a"
