@@ -107,7 +107,7 @@ Ref<InputEventMultiMouseButton> MultiMouseServer::make_button_event(int32_t devi
     event.instantiate();
     event->set_device(device_id);
     event->set_device_guid(device_guid);
-    event->set_button_index(button_index);
+    event->set_button_index(static_cast<MouseButton>(button_index));
     event->set_pressed(pressed);
     event->set_button_mask(mask);
 
