@@ -2,8 +2,6 @@
 
 #include "multi_mouse_backend_windows.h"
 
-#include "multi_mouse_server.h"
-
 #include <godot_cpp/classes/utility_functions.hpp>
 
 #include <chrono>
