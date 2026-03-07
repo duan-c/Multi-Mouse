@@ -1,0 +1,15 @@
+# Build artifacts
+.build/
+bin/
+*.dll
+*.so
+*.dylib
+
+# Godot
+.export/
+.import/
+*.godot
+
+# Editor cruft
+.DS_Store
+Thumbs.db
