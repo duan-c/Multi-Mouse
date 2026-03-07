@@ -7,24 +7,20 @@ const POINT_MASS := 1.0
 const SPRING_STIFFNESS := 18.0
 const SHEAR_STIFFNESS := 10.0
 const SPRING_DAMPING := 0.95
-const GRAVITY := Vector2.ZERO #Vector2(0, 350)
+const GRAVITY := Vector2.ZERO
 const POINTER_RADIUS := 110.0
 const POINTER_STRENGTH := 2200.0
 const POINTER_DAMPING := 0.25
 const EDGE_RESTORING_FORCE := 2.0
+const DEFAULT_POINTER_ID := "default"
 
 var _points: Array[SlimePoint] = []
 var _connections: Array = []
 var _shear_connections: Array = []
-var _rest_positions: PackedVector2Array
-
-class PointerState:
-	var position := Vector2.ZERO
-	var target := Vector2.ZERO
-	var velocity := Vector2.ZERO
-	var pressed := false
-
-var _pointers: Array[PointerState] = []
+var _pointer_map: Dictionary = {}
+var _device_pointer_keys: Dictionary = {}
+var _multi_node: Node = null
+var _multi_enabled := false
 
 class SlimePoint:
 	var position: Vector2
@@ -34,10 +30,21 @@ class SlimePoint:
 	var anchor: Vector2
 	var anchor_strength: float = 0.0
 
+class PointerState:
+	var position := Vector2.ZERO
+	var target := Vector2.ZERO
+	var velocity := Vector2.ZERO
+	var pressed := false
+	var color := Color(0.4, 0.8, 1.0)
+
 func _ready() -> void:
 	_build_grid()
-	_ensure_default_pointer()
+	_ensure_pointer(DEFAULT_POINTER_ID)
+	_setup_multi_mouse()
 	set_physics_process(true)
+
+func _exit_tree() -> void:
+	_disable_multi_mouse()
 
 func _build_grid() -> void:
 	_points.clear()
@@ -51,7 +58,6 @@ func _build_grid() -> void:
 			p.position = pos
 			p.anchor = pos
 			p.mass = POINT_MASS
-			# pin the top row lightly so the blob doesn't drift away
 			if y == 0:
 				p.anchor_strength = EDGE_RESTORING_FORCE
 			_points.append(p)
@@ -68,28 +74,58 @@ func _build_grid() -> void:
 			if x > 0 and y < GRID_ROWS - 1:
 				_shear_connections.append([idx, idx + GRID_COLS - 1, GRID_SPACING * sqrt(2), SHEAR_STIFFNESS])
 
-func _ensure_default_pointer() -> void:
-	if _pointers.is_empty():
-		_pointers.append(PointerState.new())
+func _setup_multi_mouse() -> void:
+	if not Engine.has_singleton("MultiMouseServer"):
+		return
+	_multi_node = get_node_or_null("/root/MultiMouse")
+	if _multi_node == null:
+		return
+	if _multi_node.motion.is_connected(_on_multi_motion) == false:
+		_multi_node.motion.connect(_on_multi_motion)
+	if _multi_node.button.is_connected(_on_multi_button) == false:
+		_multi_node.button.connect(_on_multi_button)
+	if _multi_node.device_disconnected.is_connected(_on_multi_device_disconnected) == false:
+		_multi_node.device_disconnected.connect(_on_multi_device_disconnected)
+	if _multi_node.has_method("attach_to_window"):
+		_multi_node.attach_to_window(0)
+	if _multi_node.has_method("enable"):
+		_multi_node.enable()
+	_multi_enabled = true
 
-func _primary_pointer() -> PointerState:
-	if _pointers.is_empty():
-		_ensure_default_pointer()
-	return _pointers[0]
+func _disable_multi_mouse() -> void:
+	if _multi_node:
+		if _multi_node.motion.is_connected(_on_multi_motion):
+			_multi_node.motion.disconnect(_on_multi_motion)
+		if _multi_node.button.is_connected(_on_multi_button):
+			_multi_node.button.disconnect(_on_multi_button)
+		if _multi_node.device_disconnected.is_connected(_on_multi_device_disconnected):
+			_multi_node.device_disconnected.disconnect(_on_multi_device_disconnected)
+		if _multi_node.has_method("disable"):
+			_multi_node.disable()
+	_multi_node = null
+	_multi_enabled = false
+	_device_pointer_keys.clear()
+	_remove_non_default_pointers()
 
-func _update_pointer_target() -> void:
-	var viewport := get_viewport()
-	if viewport:
-		var local_mouse := viewport.get_mouse_position()
-		_primary_pointer().target = _screen_to_sim(local_mouse)
+func _remove_non_default_pointers() -> void:
+	for key in _pointer_map.keys():
+		if key != DEFAULT_POINTER_ID:
+			_pointer_map.erase(key)
 
 func _physics_process(delta: float) -> void:
-	_update_pointer_target()
+	_update_default_pointer_target()
 	_apply_forces()
 	_apply_connections(delta)
-	_apply_pointer(delta)
+	_apply_pointer_forces(delta)
 	_integrate(delta)
 	queue_redraw()
+
+func _update_default_pointer_target() -> void:
+	var viewport := get_viewport()
+	if viewport == null:
+		return
+	var pointer := _primary_pointer()
+	pointer.target = _screen_to_sim(viewport.get_mouse_position())
 
 func _apply_forces() -> void:
 	for p: SlimePoint in _points:
@@ -119,11 +155,10 @@ func _apply_spring(conn: Array) -> void:
 	a.force += force
 	b.force -= force
 
-func _apply_pointer(delta: float) -> void:
-	for pointer in _pointers:
+func _apply_pointer_forces(delta: float) -> void:
+	for pointer: PointerState in _pointer_states():
 		pointer.velocity = (pointer.velocity * (1.0 - POINTER_DAMPING)) + (pointer.target - pointer.position)
 		pointer.position += pointer.velocity * delta * 8.0
-
 		if not pointer.pressed:
 			continue
 		for p: SlimePoint in _points:
@@ -143,6 +178,31 @@ func _integrate(delta: float) -> void:
 
 func _screen_to_sim(screen_pos: Vector2) -> Vector2:
 	return screen_pos - get_viewport_rect().size * 0.5
+
+func _pointer_states() -> Array:
+	return _pointer_map.values()
+
+func _primary_pointer() -> PointerState:
+	return _ensure_pointer(DEFAULT_POINTER_ID)
+
+func _ensure_pointer(key: Variant) -> PointerState:
+	if not _pointer_map.has(key):
+		var state := PointerState.new()
+		state.color = _color_for_pointer(key)
+		_pointer_map[key] = state
+	return _pointer_map[key]
+
+func _color_for_pointer(key: Variant) -> Color:
+	if key == DEFAULT_POINTER_ID:
+		return Color(0.4, 0.8, 1.0)
+	var hue := float(abs(hash(key)) % 360) / 360.0
+	return Color.from_hsv(hue, 0.6, 0.9)
+
+func _remove_pointer(key: Variant) -> void:
+	if key == DEFAULT_POINTER_ID:
+		return
+	if _pointer_map.has(key):
+		_pointer_map.erase(key)
 
 func _input(event: InputEvent) -> void:
 	var pointer := _primary_pointer()
@@ -166,10 +226,31 @@ func _draw() -> void:
 	for p in _points:
 		draw_circle(p.position + offset, 6, Color(0.7, 0.7, 0.8))
 
-	for pointer in _pointers:
+	for pointer: PointerState in _pointer_states():
 		var pointer_screen := pointer.position + offset
-		var pointer_color := Color(1, 0.8, 0.2) if pointer.pressed else Color(0.4, 0.8, 1.0)
-		var pointer_color_with_alpha := pointer_color
-		pointer_color_with_alpha.a = 0.1
-		draw_circle(pointer_screen, 12, pointer_color)
-		draw_circle(pointer_screen, POINTER_RADIUS, pointer_color_with_alpha)
+		var halo := pointer.color
+		halo.a = 0.1
+		draw_circle(pointer_screen, 12, pointer.color)
+		draw_circle(pointer_screen, POINTER_RADIUS, halo)
+
+func _on_multi_motion(event: InputEventMouseMotion) -> void:
+	var pointer := _ensure_pointer(_pointer_key_from_event(event))
+	pointer.target += event.relative
+
+func _on_multi_button(event: InputEventMouseButton) -> void:
+	var pointer := _ensure_pointer(_pointer_key_from_event(event))
+	if event.button_index == MOUSE_BUTTON_LEFT:
+		pointer.pressed = event.pressed
+
+func _on_multi_device_disconnected(device_id: int) -> void:
+	if _device_pointer_keys.has(device_id):
+		var key := _device_pointer_keys[device_id]
+		_device_pointer_keys.erase(device_id)
+		_remove_pointer(key)
+
+func _pointer_key_from_event(event: InputEvent) -> String:
+	var key := "device_%s" % event.device
+	if event.has_meta("device_guid"):
+		key = str(event.get_meta("device_guid"))
+	_device_pointer_keys[event.device] = key
+	return key
