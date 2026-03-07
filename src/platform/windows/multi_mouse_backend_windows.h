@@ -46,6 +46,7 @@ private:
 
     void thread_main();
     bool register_raw_input_window();
+    bool register_raw_input_devices();
     void handle_raw_input(HRAWINPUT raw_handle);
     void handle_device_change(HANDLE device, bool arrival);
     std::string ensure_device_guid(HANDLE device);

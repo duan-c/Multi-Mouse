@@ -202,6 +202,17 @@ LRESULT CALLBACK MultiMouseBackendWindows::WindowProc(HWND hwnd, UINT msg, WPARA
             PostQuitMessage(0);
             return 0;
         }
+        case WM_SETFOCUS: {
+            UtilityFunctions::print("Multi-Mouse: window gained focus");
+            if (backend) {
+                backend->register_raw_input_devices();
+            }
+            return 0;
+        }
+        case WM_KILLFOCUS: {
+            UtilityFunctions::print("Multi-Mouse: window lost focus");
+            return 0;
+        }
         default:
             break;
     }
