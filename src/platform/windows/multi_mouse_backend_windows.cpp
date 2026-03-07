@@ -145,6 +145,10 @@ bool MultiMouseBackendWindows::register_raw_input_window() {
         return false;
     }
 
+    if (_target_hwnd) {
+        return register_on_hwnd(_target_hwnd);
+    }
+
     _hwnd = CreateWindowExW(WS_EX_NOACTIVATE,
                             kWindowClassName,
                             L"Multi-Mouse Raw Input",
@@ -161,14 +165,7 @@ bool MultiMouseBackendWindows::register_raw_input_window() {
         return false;
     }
 
-    RAWINPUTDEVICE rid{};
-    rid.usUsagePage = HID_USAGE_PAGE_GENERIC;
-    rid.usUsage = HID_USAGE_GENERIC_MOUSE;
-    rid.dwFlags = RIDEV_INPUTSINK | RIDEV_DEVNOTIFY;
-    rid.hwndTarget = _hwnd;
-
-    if (!RegisterRawInputDevices(&rid, 1, sizeof(rid))) {
-        UtilityFunctions::printerr("Multi-Mouse: RegisterRawInputDevices failed");
+    if (!register_raw_input_devices()) {
         return false;
     }
 
