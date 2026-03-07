@@ -122,6 +122,9 @@ void MultiMouseBackendWindows::thread_main() {
         if (res <= 0) {
             break;
         }
+        if (msg.message == WM_INPUT) {
+            UtilityFunctions::print("WM_INPUT received");
+        }
         TranslateMessage(&msg);
         DispatchMessageW(&msg);
     }
@@ -166,6 +169,7 @@ bool MultiMouseBackendWindows::register_raw_input_window() {
         return false;
     }
 
+    UtilityFunctions::print("Multi-Mouse: Raw Input window registered");
     return true;
 }
 
@@ -250,6 +254,7 @@ void MultiMouseBackendWindows::handle_raw_input(HRAWINPUT raw_handle) {
 
     if (!(mouse.usFlags & MOUSE_MOVE_ABSOLUTE)) {
         if (mouse.lLastX != 0 || mouse.lLastY != 0) {
+            UtilityFunctions::print("Raw input motion", mouse.lLastX, mouse.lLastY);
             Vector2 rel((real_t)mouse.lLastX, (real_t)mouse.lLastY);
             enqueue_motion(guid, rel, timestamp);
         }
