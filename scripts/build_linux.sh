@@ -27,4 +27,4 @@ cmake -B "$BUILD_DIR" -S "$ROOT_DIR/src" \
   -DGODOT_CPP_LIB="$LIB_PATH"
 cmake --build "$BUILD_DIR" --config Release
 
-echo "Built native library. Copyit from $BUILD_DIR/libmulti_mouse.so to addons/multi_mouse/bin/linux/."
+echo "Built native library. Copy it from $BUILD_DIR/libmulti_mouse.so to addons/multi_mouse/bin/linux/."

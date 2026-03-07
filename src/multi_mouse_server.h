@@ -37,17 +37,16 @@ public:
     void unregister_device(int32_t device_id);
 
     Ref<InputEventMultiMouseMotion> make_motion_event(int32_t device_id,
-                                                      const Vector2 &position,
                                                       const Vector2 &relative,
                                                       uint64_t timestamp_us,
-                                                      const String &device_guid) const;
+                                                      const String &device_guid);
 
     Ref<InputEventMultiMouseButton> make_button_event(int32_t device_id,
                                                       int32_t button_index,
                                                       bool pressed,
                                                       uint32_t mask,
                                                       uint64_t timestamp_us,
-                                                      const String &device_guid) const;
+                                                      const String &device_guid);
 
     void emit_motion(const Ref<InputEventMultiMouseMotion> &event);
     void emit_button(const Ref<InputEventMultiMouseButton> &event);
@@ -60,6 +59,7 @@ private:
 
     int32_t _next_device_id = 1;
     std::unordered_map<int32_t, Dictionary> _devices;
+    std::unordered_map<int32_t, Vector2> _device_positions;
     std::unique_ptr<MultiMouseBackend> _backend;
 };
 

@@ -15,9 +15,9 @@ MultiMouseServer::MultiMouseServer() {
         _backend->start();
     } else {
         MultiMouseDeviceInfo info;
-        info.name = "Placeholder Mouse";
-        info.system_id = "placeholder";
-        info.transport = "stub";
+        info.name = String("Placeholder Mouse");
+        info.system_id = String("placeholder");
+        info.transport = String("stub");
         register_device(info);
     }
 }
@@ -61,25 +61,31 @@ int32_t MultiMouseServer::register_device(const MultiMouseDeviceInfo &info) {
     const int32_t device_id = _next_device_id++;
     Dictionary dict = _device_info_to_dict(device_id, info);
     _devices[device_id] = dict;
+    _device_positions[device_id] = Vector2();
     emit_signal("device_connected", device_id, dict);
     return device_id;
 }
 
 void MultiMouseServer::unregister_device(int32_t device_id) {
     if (_devices.erase(device_id) > 0) {
+        _device_positions.erase(device_id);
         emit_signal("device_disconnected", device_id);
     }
 }
 
 Ref<InputEventMultiMouseMotion> MultiMouseServer::make_motion_event(int32_t device_id,
-                                                                    const Vector2 &position,
                                                                     const Vector2 &relative,
                                                                     uint64_t timestamp_us,
-                                                                    const String &device_guid) const {
+                                                                    const String &device_guid) {
     Ref<InputEventMultiMouseMotion> event;
     event.instantiate();
     event->set_device(device_id);
     event->set_device_guid(device_guid);
+
+    Vector2 position = _device_positions[device_id];
+    position += relative;
+    _device_positions[device_id] = position;
+
     event->set_position(position);
     event->set_global_position(position);
     event->set_relative(relative);
@@ -96,7 +102,7 @@ Ref<InputEventMultiMouseButton> MultiMouseServer::make_button_event(int32_t devi
                                                                     bool pressed,
                                                                     uint32_t mask,
                                                                     uint64_t timestamp_us,
-                                                                    const String &device_guid) const {
+                                                                    const String &device_guid) {
     Ref<InputEventMultiMouseButton> event;
     event.instantiate();
     event->set_device(device_id);
@@ -104,8 +110,15 @@ Ref<InputEventMultiMouseButton> MultiMouseServer::make_button_event(int32_t devi
     event->set_button_index(button_index);
     event->set_pressed(pressed);
     event->set_button_mask(mask);
-    event->set_position(Vector2());
-    event->set_global_position(Vector2());
+
+    Vector2 position;
+    auto it = _device_positions.find(device_id);
+    if (it != _device_positions.end()) {
+        position = it->second;
+    }
+    event->set_position(position);
+    event->set_global_position(position);
+
     event->set_meta("timestamp_us", (int64_t)timestamp_us);
     return event;
 }

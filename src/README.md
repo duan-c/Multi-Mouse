@@ -30,6 +30,6 @@ The helper script `scripts/build_linux.sh` automates the steps above.
 
 ## Next steps
 
-- Flesh out the Windows Raw Input backend and pipe real motion/button events.
-- Implement a background thread that pushes events into a lock-free queue.
+- ✅ Windows Raw Input backend thread + event queue (needs on-device testing).
 - Mirror the API on Linux via ManyMouse or libinput.
+- Add hotplug filtering, device-friendly names, and diagnostics APIs.

@@ -47,9 +47,10 @@ strongly-typed events (`InputEventMultiMouseMotion`, `InputEventMultiMouseButton
    - GDExtension boilerplate + custom input-event classes.
    - Demo Godot project.
 
-2. **Windows proof of concept**
-   - Minimal Raw Input collector (single thread, no hotplug yet).
-   - Emit per-device motion events into Godot and draw two cursors.
+2. **Windows proof of concept** (in progress)
+   - ✅ Raw Input backend thread that registers every mouse and queues motion/button events.
+   - ☐ Drain events into a sample scene (needs compiled DLL on Windows to verify).
+   - ☐ Draw multiple cursors driven by independent mice.
 
 3. **Hotplug + buttons**
    - Detect device connect/disconnect, assign stable IDs.
@@ -83,6 +84,14 @@ cp build/linux/libmulti_mouse.so addons/multi_mouse/bin/linux/libmulti_mouse.lin
 On Windows/macOS the flow is similar: build `godot-cpp` with SCons for your
 platform/target, run CMake with `-DGODOT_CPP_LIB` pointing at the generated
 static library, then copy the produced DLL/Dylib/SO into `addons/multi_mouse/bin/...`.
+
+### Windows backend status
+The native layer now spins up a hidden Raw Input window, discovers each physical
+mouse, and queues per-device motion + button events. `MultiMouseServer.poll()`
+drains those queues on the Godot main thread, registers devices, and emits
+`InputEventMultiMouse*` objects. Once the DLL is built on Windows you should see
+real device IDs flowing into the demo scene's log—just enable the plugin and
+spam `Project → Tools → Multi-Mouse Demo` (or run the included project).
 
 ## License
 MIT
