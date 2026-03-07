@@ -8,8 +8,8 @@ const SPRING_STIFFNESS := 18.0
 const SHEAR_STIFFNESS := 10.0
 const SPRING_DAMPING := 0.95
 const GRAVITY := Vector2.ZERO #Vector2(0, 350)
-const POINTER_RADIUS := 90.0
-const POINTER_STRENGTH := 3800.0
+const POINTER_RADIUS := 110.0
+const POINTER_STRENGTH := 2200.0
 const POINTER_DAMPING := 0.25
 const EDGE_RESTORING_FORCE := 2.0
 
@@ -113,10 +113,10 @@ func _apply_pointer(delta: float) -> void:
 	if not _pointer_down:
 		return
 	for p: SlimePoint in _points:
-		var offset := _pointer_pos - p.position
+		var offset := p.position - _pointer_pos
 		var dist := offset.length()
 		if dist < POINTER_RADIUS and dist > 0.001:
-			var strength := (1.0 - dist / POINTER_RADIUS)
+			var strength := pow(1.0 - dist / POINTER_RADIUS, 2)
 			var push := offset.normalized() * POINTER_STRENGTH * strength
 			p.force += push
 
