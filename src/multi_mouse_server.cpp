@@ -43,7 +43,7 @@ void MultiMouseServer::_bind_methods() {
                           PropertyInfo(Variant::OBJECT, "event", PROPERTY_HINT_RESOURCE_TYPE, "InputEventMultiMouseButton")));
 }
 
-TypedArray<Dictionary> MultiMouseServer::get_connected_devices() const {
+TypedArray<Dictionary> MultiMouseServer::get_connected_devices() {
     TypedArray<Dictionary> result;
     for (const auto &pair : _devices) {
         result.push_back(pair.second);

@@ -30,7 +30,7 @@ public:
     MultiMouseServer();
     ~MultiMouseServer() override;
 
-    TypedArray<Dictionary> get_connected_devices() const;
+    TypedArray<Dictionary> get_connected_devices();
     void poll();
 
     int32_t register_device(const MultiMouseDeviceInfo &info);
