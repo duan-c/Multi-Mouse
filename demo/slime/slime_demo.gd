@@ -18,7 +18,8 @@ var _connections: Array = []
 var _shear_connections: Array = []
 var _rest_positions: PackedVector2Array
 
-var _pointer_pos := Vector2.ZERO
+var _pointer_pos := Vector2.ZERO # simulation-space position (blob centered at 0,0)
+var _pointer_target := Vector2.ZERO
 var _pointer_down := false
 var _pointer_velocity := Vector2.ZERO
 
@@ -63,7 +64,14 @@ func _build_grid() -> void:
 			if x > 0 and y < GRID_ROWS - 1:
 				_shear_connections.append([idx, idx + GRID_COLS - 1, GRID_SPACING * sqrt(2), SHEAR_STIFFNESS])
 
+func _update_pointer_target() -> void:
+	var viewport := get_viewport()
+	if viewport:
+		var local_mouse := viewport.get_mouse_position()
+		_pointer_target = _screen_to_sim(local_mouse)
+
 func _physics_process(delta: float) -> void:
+	_update_pointer_target()
 	_apply_forces()
 	_apply_connections(delta)
 	_apply_pointer(delta)
@@ -99,8 +107,7 @@ func _apply_spring(conn: Array) -> void:
 	b.force -= force
 
 func _apply_pointer(delta: float) -> void:
-	var target := get_global_mouse_position()
-	_pointer_velocity = (_pointer_velocity * (1.0 - POINTER_DAMPING)) + (target - _pointer_pos)
+	_pointer_velocity = (_pointer_velocity * (1.0 - POINTER_DAMPING)) + (_pointer_target - _pointer_pos)
 	_pointer_pos += _pointer_velocity * delta * 8.0
 
 	if not _pointer_down:
@@ -120,9 +127,12 @@ func _integrate(delta: float) -> void:
 		p.velocity *= SPRING_DAMPING
 		p.position += p.velocity * delta
 
+func _screen_to_sim(screen_pos: Vector2) -> Vector2:
+	return screen_pos - get_viewport_rect().size * 0.5
+
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
-		_pointer_pos = event.position
+		_pointer_target = _screen_to_sim(event.position)
 	elif event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			_pointer_down = event.pressed
@@ -141,8 +151,8 @@ func _draw() -> void:
 	for p in _points:
 		draw_circle(p.position + offset, 6, Color(0.7, 0.7, 0.8))
 
+	var pointer_screen := _pointer_pos + offset
 	var pointer_color := Color(1, 0.8, 0.2) if _pointer_down else Color(0.4, 0.8, 1.0)
-	var pointer_color_with_alpha := pointer_color
-	pointer_color.a = 0.1
-	draw_circle(_pointer_pos, 12, pointer_color)
-	draw_circle(_pointer_pos, POINTER_RADIUS, pointer_color_with_alpha)
+	var pointer_color_with_alpha := pointer_color.with_alpha(0.1)
+	draw_circle(pointer_screen, 12, pointer_color)
+	draw_circle(pointer_screen, POINTER_RADIUS, pointer_color_with_alpha)
