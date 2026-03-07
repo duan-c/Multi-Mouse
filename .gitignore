@@ -1,7 +1,12 @@
 # Build artifacts
 .build/
 build/
+# keep addon binaries tracked
 bin/
+!.gitkeep
+addons/multi_mouse/bin/multi_mouse.gdextension
+addons/multi_mouse/bin/win64/
+addons/multi_mouse/bin/win64/*.dll
 *.dll
 *.so
 *.dylib
