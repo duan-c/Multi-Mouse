@@ -4,8 +4,8 @@ This folder holds the Godot-facing layer of the project:
 
 - `plugin.cfg` / `plugin.gd` register the add-on and autoload `MultiMouse`.
 - `multi_mouse_manager.gd` listens to the native `MultiMouseServer` signals and
-  re-emits them as `InputEventMultiMouseMotion` / `InputEventMultiMouseButton`
-  instances so downstream code can keep using familiar Godot mouse semantics.
+  re-emits them as standard `InputEventMouseMotion` / `InputEventMouseButton`
+  instances, annotated with metadata (`device_guid`, `timestamp_us`).
 - `bin/multi_mouse.gdextension` points Godot at the compiled native libraries for
   each platform/target.
 

@@ -3,8 +3,8 @@ class_name MultiMouse
 
 signal device_connected(device_id: int, info: Dictionary)
 signal device_disconnected(device_id: int)
-signal motion(event: InputEventMultiMouseMotion)
-signal button(event: InputEventMultiMouseButton)
+signal motion(event: InputEventMouseMotion)
+signal button(event: InputEventMouseButton)
 
 var _server: Object
 
@@ -48,8 +48,8 @@ func _on_device_connected(device_id: int, info: Dictionary) -> void:
 func _on_device_disconnected(device_id: int) -> void:
     device_disconnected.emit(device_id)
 
-func _on_motion(event: InputEventMultiMouseMotion) -> void:
+func _on_motion(event: InputEventMouseMotion) -> void:
     motion.emit(event)
 
-func _on_button(event: InputEventMultiMouseButton) -> void:
+func _on_button(event: InputEventMouseButton) -> void:
     button.emit(event)

@@ -21,10 +21,10 @@ func _ready() -> void:
     manager.device_disconnected.connect(_on_device_disconnected)
     label.text = "Devices: %s" % [manager.get_devices()]
 
-func _on_motion(event: InputEventMultiMouseMotion) -> void:
+func _on_motion(event: InputEventMouseMotion) -> void:
     label.text = "Motion from %s: rel=%s" % [event.device, event.relative]
 
-func _on_button(event: InputEventMultiMouseButton) -> void:
+func _on_button(event: InputEventMouseButton) -> void:
     label.text = "Button %s from %s (pressed=%s)" % [event.button_index, event.device, event.pressed]
 
 func _on_device_connected(device_id: int, info: Dictionary) -> void:

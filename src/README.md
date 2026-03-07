@@ -3,7 +3,8 @@
 This directory contains the C++ pieces that expose raw multi-mouse events to
 Godot via GDExtension. Platform backends will live under `platform/` (Windows
 Raw Input first, then Linux libinput/ManyMouse). For now the server publishes
-placeholder devices plus strongly-typed `InputEventMultiMouse*` classes.
+placeholder devices and emits stock `InputEventMouseMotion/Button` objects with
+metadata tags identifying each device.
 
 ## Build steps (Linux example)
 

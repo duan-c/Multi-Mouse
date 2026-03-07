@@ -15,7 +15,9 @@ Godot collapses all pointing devices into a single logical mouse. That means:
 
 Multi-Mouse wraps a native shim (Windows Raw Input first, Linux libinput /
 ManyMouse next) and forwards each device's raw motion/button state into Godot as
-strongly-typed events (`InputEventMultiMouseMotion`, `InputEventMultiMouseButton`).
+plain `InputEventMouseMotion` / `InputEventMouseButton` events tagged with
+`device_guid` metadata so downstream code can filter per device without learning a
+new API surface.
 
 ## Planned architecture
 
@@ -38,7 +40,8 @@ strongly-typed events (`InputEventMultiMouseMotion`, `InputEventMultiMouseButton
 
 3. **Godot-facing add-on**
    - Autoload `MultiMouse` node subscribes to the singleton and re-emits signals.
-   - Sample scene shows multiple cursors driven by `InputEventMultiMouseMotion`.
+   - Sample scene shows multiple cursors driven by stock `InputEventMouseMotion`
+     objects with per-device metadata.
 
 ## Milestones
 
@@ -90,9 +93,10 @@ static library. Copy the produced DLL/Dylib/SO into `addons/multi_mouse/bin/...`
 The native layer now spins up a hidden Raw Input window, discovers each physical
 mouse, and queues per-device motion + button events. `MultiMouseServer.poll()`
 drains those queues on the Godot main thread, registers devices, and emits
-`InputEventMultiMouse*` objects. Once the DLL is built on Windows you should see
-real device IDs flowing into the demo scene's log—just enable the plugin and
-spam `Project → Tools → Multi-Mouse Demo` (or run the included project).
+standard `InputEventMouseMotion/Button` objects with `device_guid` metadata. Once
+the DLL is built on Windows you should see real device IDs flowing into the demo
+scene's log—just enable the plugin and spam `Project → Tools → Multi-Mouse Demo`
+(or run the included project).
 
 ## License
 MIT

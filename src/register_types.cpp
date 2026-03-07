@@ -1,6 +1,5 @@
 #include "register_types.h"
 
-#include "input_events.h"
 #include "multi_mouse_server.h"
 
 #include <godot_cpp/classes/engine.hpp>
@@ -16,8 +15,6 @@ void initialize_multi_mouse_module(ModuleInitializationLevel p_level) {
         return;
     }
 
-    ClassDB::register_class<InputEventMultiMouseMotion>();
-    ClassDB::register_class<InputEventMultiMouseButton>();
     ClassDB::register_class<MultiMouseServer>();
 
     multi_mouse_server_singleton = memnew(MultiMouseServer);

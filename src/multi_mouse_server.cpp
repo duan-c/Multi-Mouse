@@ -38,9 +38,9 @@ void MultiMouseServer::_bind_methods() {
     ADD_SIGNAL(MethodInfo("device_disconnected",
                           PropertyInfo(Variant::INT, "device_id")));
     ADD_SIGNAL(MethodInfo("motion",
-                          PropertyInfo(Variant::OBJECT, "event", PROPERTY_HINT_RESOURCE_TYPE, "InputEventMultiMouseMotion")));
+                          PropertyInfo(Variant::OBJECT, "event", PROPERTY_HINT_RESOURCE_TYPE, "InputEventMouseMotion")));
     ADD_SIGNAL(MethodInfo("button",
-                          PropertyInfo(Variant::OBJECT, "event", PROPERTY_HINT_RESOURCE_TYPE, "InputEventMultiMouseButton")));
+                          PropertyInfo(Variant::OBJECT, "event", PROPERTY_HINT_RESOURCE_TYPE, "InputEventMouseButton")));
 }
 
 TypedArray<Dictionary> MultiMouseServer::get_connected_devices() {
@@ -73,14 +73,13 @@ void MultiMouseServer::unregister_device(int32_t device_id) {
     }
 }
 
-Ref<InputEventMultiMouseMotion> MultiMouseServer::make_motion_event(int32_t device_id,
-                                                                    const Vector2 &relative,
-                                                                    uint64_t timestamp_us,
-                                                                    const String &device_guid) {
-    Ref<InputEventMultiMouseMotion> event;
+Ref<InputEventMouseMotion> MultiMouseServer::make_motion_event(int32_t device_id,
+                                                               const Vector2 &relative,
+                                                               uint64_t timestamp_us,
+                                                               const String &device_guid) {
+    Ref<InputEventMouseMotion> event;
     event.instantiate();
     event->set_device(device_id);
-    event->set_device_guid(device_guid);
 
     Vector2 position = _device_positions[device_id];
     position += relative;
@@ -94,19 +93,19 @@ Ref<InputEventMultiMouseMotion> MultiMouseServer::make_motion_event(int32_t devi
     event->set_pressure(0.0);
     event->set_tilt(Vector2());
     event->set_meta("timestamp_us", (int64_t)timestamp_us);
+    event->set_meta("device_guid", device_guid);
     return event;
 }
 
-Ref<InputEventMultiMouseButton> MultiMouseServer::make_button_event(int32_t device_id,
-                                                                    int32_t button_index,
-                                                                    bool pressed,
-                                                                    uint32_t mask,
-                                                                    uint64_t timestamp_us,
-                                                                    const String &device_guid) {
-    Ref<InputEventMultiMouseButton> event;
+Ref<InputEventMouseButton> MultiMouseServer::make_button_event(int32_t device_id,
+                                                               int32_t button_index,
+                                                               bool pressed,
+                                                               uint32_t mask,
+                                                               uint64_t timestamp_us,
+                                                               const String &device_guid) {
+    Ref<InputEventMouseButton> event;
     event.instantiate();
     event->set_device(device_id);
-    event->set_device_guid(device_guid);
     event->set_button_index(static_cast<MouseButton>(button_index));
     event->set_pressed(pressed);
     event->set_button_mask(mask);
@@ -120,14 +119,15 @@ Ref<InputEventMultiMouseButton> MultiMouseServer::make_button_event(int32_t devi
     event->set_global_position(position);
 
     event->set_meta("timestamp_us", (int64_t)timestamp_us);
+    event->set_meta("device_guid", device_guid);
     return event;
 }
 
-void MultiMouseServer::emit_motion(const Ref<InputEventMultiMouseMotion> &event) {
+void MultiMouseServer::emit_motion(const Ref<InputEventMouseMotion> &event) {
     emit_signal("motion", event);
 }
 
-void MultiMouseServer::emit_button(const Ref<InputEventMultiMouseButton> &event) {
+void MultiMouseServer::emit_button(const Ref<InputEventMouseButton> &event) {
     emit_signal("button", event);
 }
 

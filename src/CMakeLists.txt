@@ -22,7 +22,6 @@ add_library(multi_mouse SHARED
     register_types.cpp
     multi_mouse_server.cpp
     multi_mouse_backend.cpp
-    input_events.cpp
 )
 
 target_include_directories(multi_mouse PRIVATE
