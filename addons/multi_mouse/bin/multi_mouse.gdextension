@@ -1,5 +1,6 @@
 [configuration]
 entry_symbol = "multi_mouse_library_init"
+compatibility_minimum = "4.6"
 
 [libraries]
 windows.debug.x86_64 = "res://addons/multi_mouse/bin/win64/libmulti_mouse.windows.template_debug.x86_64.dll"
