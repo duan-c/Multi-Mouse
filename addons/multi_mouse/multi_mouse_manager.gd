@@ -9,6 +9,7 @@ signal button(event: InputEventMultiMouseButton)
 var _server: Object
 
 func _ready() -> void:
+    set_process(true)
     if Engine.has_singleton("MultiMouseServer"):
         _server = Engine.get_singleton("MultiMouseServer")
         _bind_server_callbacks()
@@ -28,6 +29,9 @@ func _emit_existing_devices() -> void:
     if _server and _server.has_method("get_connected_devices"):
         for dev in _server.get_connected_devices():
             device_connected.emit(int(dev["device_id"]), dev)
+
+func _process(_delta: float) -> void:
+    request_poll()
 
 func request_poll() -> void:
     if _server and _server.has_method("poll"):
