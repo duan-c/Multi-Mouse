@@ -11,7 +11,7 @@
 
 #include <hidusage.h>
 
-using namespace godot;
+namespace godot {
 
 namespace {
 constexpr wchar_t kWindowClassName[] = L"MultiMouseRawInputWindow";
