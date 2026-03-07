@@ -7,6 +7,7 @@ signal button(event: InputEventMouseButton)
 
 var _server: Object
 var _requested_enabled := false
+var _attached := false
 
 func _ready() -> void:
     set_process(true)
@@ -17,9 +18,14 @@ func _ready() -> void:
     else:
         push_warning("MultiMouseServer native singleton is not available. Build the GDExtension for your platform.")
 
+func attach_to_window(hwnd: int) -> void:
+    if _server and _server.has_method("attach_to_window"):
+        _server.attach_to_window(hwnd)
+        _attached = true
+
 func enable() -> void:
     _requested_enabled = true
-    if _server and _server.has_method("enable_backend"):
+    if _server and _attached and _server.has_method("enable_backend"):
         _server.enable_backend()
 
 func disable() -> void:
