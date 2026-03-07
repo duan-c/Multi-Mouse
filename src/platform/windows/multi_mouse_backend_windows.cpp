@@ -120,8 +120,11 @@ void MultiMouseBackendWindows::thread_main() {
     while (_running.load()) {
         BOOL res = GetMessageW(&msg, nullptr, 0, 0);
         if (res <= 0) {
+            DWORD err = GetLastError();
+            UtilityFunctions::printerr("Multi-Mouse: GetMessage returned", int(res), "error", int(err));
             break;
         }
+        UtilityFunctions::print("Multi-Mouse: message", int(msg.message));
         if (msg.message == WM_INPUT) {
             UtilityFunctions::print("WM_INPUT received");
         }
