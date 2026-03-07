@@ -38,4 +38,8 @@ if(WIN32)
     target_link_libraries(multi_mouse PRIVATE user32)
 endif()
 
+if(MSVC)
+    target_compile_definitions(multi_mouse PRIVATE TYPED_METHOD_BIND NOMINMAX)
+endif()
+
 install(TARGETS multi_mouse DESTINATION ${CMAKE_SOURCE_DIR}/../addons/multi_mouse/bin)
