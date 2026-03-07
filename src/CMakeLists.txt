@@ -31,6 +31,7 @@ target_include_directories(multi_mouse PRIVATE
     ${GODOT_CPP_PATH}/gen/include
     ${GODOT_CPP_PATH}/gen/include/godot_cpp
     ${GODOT_CPP_PATH}/gdextension
+    ${CMAKE_SOURCE_DIR}
 )
 
 target_link_libraries(multi_mouse PRIVATE ${GODOT_CPP_LIB})
