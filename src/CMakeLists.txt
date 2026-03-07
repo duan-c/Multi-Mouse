@@ -22,6 +22,7 @@ add_library(multi_mouse SHARED
     register_types.cpp
     multi_mouse_server.cpp
     multi_mouse_backend.cpp
+    platform/windows/multi_mouse_backend_windows.cpp
 )
 
 target_include_directories(multi_mouse PRIVATE
@@ -40,6 +41,7 @@ endif()
 
 if(MSVC)
     target_compile_definitions(multi_mouse PRIVATE TYPED_METHOD_BIND NOMINMAX)
+    set_property(TARGET multi_mouse PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
 install(TARGETS multi_mouse DESTINATION ${CMAKE_SOURCE_DIR}/../addons/multi_mouse/bin)
