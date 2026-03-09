@@ -116,7 +116,7 @@ func _build_radial_net() -> void:
 			p.position = origin + dir * radius
 			p.anchor = p.position
 			p.mass = POINT_MASS
-			p.uv = Vector2(dir.x * 0.5 + 0.5, dir.y * 0.5 + 0.5)
+			p.uv = Vector2(dir.x * 0.5 + 0.5, dir.y * 0.5 + 0.5) * 0.9 + Vector2(0.05, 0.05)
 			_points.append(p)
 
 	for r in range(ring_count + 1):
@@ -441,7 +441,4 @@ func _add_mesh_vertex(idx: int) -> void:
 		return
 	var p: SlimePoint = _points[idx]
 	var pos := Vector3(p.position.x, p.position.y, 0.0)
-	_mesh.surface_set_normal(Vector3(0, 0, 1))
-	_mesh.surface_set_color(Color(1, 1, 1, 1))
-	_mesh.surface_set_uv(p.uv)
-	_mesh.surface_add_vertex(pos)
+	_mesh.surface_add_vertex(pos, Vector3(0, 0, 1), Color(1, 1, 1, 1), Vector2(p.uv.x, p.uv.y))
