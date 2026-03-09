@@ -14,7 +14,6 @@ addons/multi_mouse/bin/win64/*.dll
 # Godot
 .export/
 .import/
-*.godot
 
 # Submodule outputs
 extern/godot-cpp/bin/
