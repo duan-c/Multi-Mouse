@@ -434,4 +434,7 @@ func _add_mesh_vertex(idx: int) -> void:
 		return
 	var p: SlimePoint = _points[idx]
 	var pos := Vector3(p.position.x, p.position.y, 0.0)
-	_mesh.surface_add_vertex(pos, Vector3(0, 0, 1), Color(1, 1, 1, 1), p.uv)
+	_mesh.surface_set_normal(Vector3(0, 0, 1))
+	_mesh.surface_set_color(Color(1, 1, 1, 1))
+	_mesh.surface_set_uv(p.uv)
+	_mesh.surface_add_vertex(pos)
