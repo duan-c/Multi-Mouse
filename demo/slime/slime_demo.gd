@@ -90,11 +90,12 @@ func _build_radial_net() -> void:
 	_shear_connections.clear()
 	_mesh_triangles.clear()
 	_mesh_enabled = true
-
+		
 	var origin := Vector2.ZERO
 	var ring_count := 6
-	var base_segments := 6
-
+	var base_segments := 6 # Number of points in the first ring
+	
+	# 1. Create Center Point
 	var center := SlimePoint.new()
 	center.position = origin
 	center.anchor = origin
@@ -102,13 +103,16 @@ func _build_radial_net() -> void:
 	center.anchor_strength = EDGE_RESTORING_FORCE
 	center.uv = Vector2(0.5, 0.5)
 	_points.append(center)
+	
+	var ring_start_index: Array[int] = [0] # Tracks where each ring begins in the array
 
-	var ring_start_index: Array[int] = [0]
-
+	# 2. Create Rings
 	for r in range(1, ring_count + 1):
 		ring_start_index.append(_points.size())
 		var radius := r * GRID_SPACING
-		var segments := base_segments * r
+		# Increase points per ring to maintain consistent density
+		var segments := base_segments * r 
+		
 		for s in range(segments):
 			var p := SlimePoint.new()
 			var angle := (TAU / segments) * s
@@ -116,26 +120,36 @@ func _build_radial_net() -> void:
 			p.position = origin + dir * radius
 			p.anchor = p.position
 			p.mass = POINT_MASS
-			p.uv = Vector2(dir.x * 0.5 + 0.5, dir.y * 0.5 + 0.5) * 0.9 + Vector2(0.05, 0.05)
+			dir = dir * (r + 0.5) / ring_count
+			p.uv = Vector2(dir.x * 0.5 + 0.5, dir.y * 0.5 + 0.5)
 			_points.append(p)
 
+	# 3. Connect Points
 	for r in range(ring_count + 1):
 		var current_ring_start := ring_start_index[r]
 		var current_ring_size := 1 if r == 0 else base_segments * r
+		
 		for s in range(current_ring_size):
 			var i := current_ring_start + s
+			
+			# A. Connect Ring Neighbors (Circular)
 			if r > 0:
 				var next_s := (s + 1) % current_ring_size
-				_connections.append([i, current_ring_start + next_s, radius_dist(i, current_ring_start + next_s), SPRING_STIFFNESS])
+				_connections.append([i, current_ring_start + next_s, (radius_dist(i, current_ring_start + next_s)), SPRING_STIFFNESS])
+			
+			# B. Connect to Inner Ring (Radial)
 			if r > 0 and r <= ring_count:
 				var inner_ring_start := ring_start_index[r - 1]
-				var inner_ring_size := int(max(1, base_segments * (r - 1)))
+				var inner_ring_size := base_segments * (r - 1)
+				# Find the closest point on the inner ring
 				var inner_ratio := float(inner_ring_size) / current_ring_size
-				var inner_idx := inner_ring_start + int(int(floor(s * inner_ratio)) % inner_ring_size)
-				_shear_connections.append([i, inner_idx, GRID_SPACING * 1.2, SHEAR_STIFFNESS])
+				var inner_idx: int = inner_ring_start + floor(s * inner_ratio)
+				_shear_connections.append([i, inner_idx, GRID_SPACING * 1.5, SHEAR_STIFFNESS])
 				if r > 1:
-					var inner_next := inner_ring_start + int(int(floor(s * inner_ratio) + 1) % inner_ring_size)
-					_shear_connections.append([i, inner_next, GRID_SPACING * 1.2, SHEAR_STIFFNESS])
+					# Shear connection to the next point on inner ring
+					var inner_next := inner_ring_start + (int(floor(s * inner_ratio) + 1) % inner_ring_size)
+					_shear_connections.append([i, inner_next, GRID_SPACING * 1.5, SHEAR_STIFFNESS])
+					#_mesh_triangles.append([i, inner_idx, inner_next])
 
 	for r in range(1, ring_count + 1):
 		var ring_start := ring_start_index[r]
@@ -154,7 +168,7 @@ func _build_radial_net() -> void:
 				_mesh_triangles.append([curr_idx, curr_next, prev_pos])
 				if prev_next != prev_pos:
 					_mesh_triangles.append([curr_next, prev_next, prev_pos])
-					
+
 func radius_dist(a: int, b: int) -> float:
 	return _points[a].position.distance_to(_points[b].position)
 
@@ -425,8 +439,8 @@ func _update_mesh() -> void:
 				var idx10 := y * GRID_COLS + (x + 1)
 				var idx01 := (y + 1) * GRID_COLS + x
 				var idx11 := (y + 1) * GRID_COLS + (x + 1)
-				_mesh_triangles.append([idx00, idx10, idx11])
-				_mesh_triangles.append([idx00, idx11, idx01])
+				_add_mesh_triangle(idx00, idx10, idx11)
+				_add_mesh_triangle(idx00, idx11, idx01)
 	for tri in _mesh_triangles:
 		_add_mesh_triangle(tri[0], tri[1], tri[2])
 	_mesh.surface_end()
@@ -441,4 +455,7 @@ func _add_mesh_vertex(idx: int) -> void:
 		return
 	var p: SlimePoint = _points[idx]
 	var pos := Vector3(p.position.x, p.position.y, 0.0)
-	_mesh.surface_add_vertex(pos, Vector3(0, 0, 1), Color(1, 1, 1, 1), Vector2(p.uv.x, p.uv.y))
+	_mesh.surface_set_normal(Vector3(0, 0, 1))
+	_mesh.surface_set_color(Color(1, 1, 1, 1))
+	_mesh.surface_set_uv(p.uv)
+	_mesh.surface_add_vertex(pos)
