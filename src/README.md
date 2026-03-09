@@ -1,51 +1,47 @@
-# Native extension scaffold
+# Native extension
 
-This directory contains the C++ GDExtension that forwards multi-mouse events to
-Godot. Platform backends live under `platform/` (Raw Input on Windows today,
-libinput/ManyMouse coming next). The extension exposes a singleton named
-`MultiMouseServer` that queues per-device motion/button events and hands them to
-any `MultiMouse` nodes inside the engine.
+This directory holds the C++ GDExtension that talks to the platform-specific
+backends (Raw Input on Windows right now). It exposes a singleton
+`MultiMouseServer` to Godot which:
 
-## Windows backend status
+- creates/destroys per-device records when mice are plugged in/out,
+- queues raw motion + button events from the capture thread, and
+- emits those events as stock `InputEventMouseMotion` / `InputEventMouseButton`
+  objects tagged with metadata (`device_guid`, timestamps, etc.).
 
-- Creates a hidden Raw Input window, registers every physical mouse, and assigns
-  each one a stable GUID + numeric ID.
-- Queues `RawInputMousePacket` structs that include relative deltas, absolute
-  timestamps, and button changes.
-- `MultiMouseServer.poll()` drains the queue on Godot's main thread, emits stock
-  `InputEventMouseMotion/Button` objects, and mirrors the GUID into
-  `event.set_meta("device_guid", guid)` so game code can filter without touching
-  native APIs.
-- `attach_to_window(hwnd)` optionally re-registers the backend against the main
-  Godot window so focus changes and confining/unhiding the cursor behave.
+The Godot add-on (`addons/multi_mouse`) simply polls this server and re-emits the
+signals; there is no autoload magic anymore.
 
 ## Building
 
-1. Initialise submodules and build `godot-cpp` once per platform/target.
-   ```bash
-   git submodule update --init --recursive
-   cd extern/godot-cpp
-   scons platform=linux target=template_debug bits=64 -j$(nproc)
-   ```
-2. Configure + build the extension with CMake, pointing at the generated
-   headers + static library.
-   ```bash
-   cmake -B build/linux -S src \
-     -DGODOT_CPP_PATH=../extern/godot-cpp \
-     -DGODOT_CPP_LIB=../extern/godot-cpp/bin/libgodot-cpp.linux.template_debug.x86_64.a
-   cmake --build build/linux --config Release
-   ```
-3. Copy the resulting `.so/.dll` into `addons/multi_mouse/bin/<platform>/` or
-   run the helper scripts:
-   - `./scripts/build_linux.sh`
-   - `./scripts/build_windows.ps1`
+### Windows
 
-The scripts regenerate bindings when needed, build both debug & release
-variants, and deposit them where the add-on expects them.
+```
+pwsh ./scripts/build_windows.ps1 -Target template_debug
+```
 
-## Next steps
+The script:
+1. Builds `extern/godot-cpp` via SCons (bindings + static lib).
+2. Runs CMake for this folder with the proper include/library paths.
+3. Copies the resulting `multi_mouse.dll` into
+   `addons/multi_mouse/bin/win64/libmulti_mouse.windows.<target>.x86_64.dll`.
 
-- Port the backend to Linux (ManyMouse prototype + libinput rewrite).
-- Add device-name queries and diagnostics helpers to `MultiMouseServer` so the
-  Godot layer can present friendlier info.
-- Expand the test harnesses under `tests/` to simulate multiple devices.
+### Linux / other platforms
+
+The Linux helper (`scripts/build_linux.sh`) mirrors the same steps, but the
+backend is still a stub. Build here only if you are developing the future
+ManyMouse/libinput implementation.
+
+## Folder structure
+
+- `platform/windows/` – Raw Input capture thread, device tracker, and queue.
+- `server/` – platform-agnostic server that drains queues and emits Godot events.
+- `events/` – thin wrappers around `InputEventMouseMotion/Button` so we can stash
+  device metadata.
+- `register_types.cpp` – GDExtension entry point.
+
+## Status
+
+- Raw motion / button events confirmed working on Windows.
+- Hotplug works; each `device_guid` is stable for the lifetime of the session.
+- Linux + macOS backends are not implemented yet.
