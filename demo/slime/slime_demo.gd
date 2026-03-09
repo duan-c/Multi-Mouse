@@ -1,25 +1,26 @@
 extends Node2D
 
-const GRID_COLS := 10
-const GRID_ROWS := 8
-const GRID_SPACING := 36.0
+const GRID_COLS := 12
+const GRID_ROWS := 12
+const GRID_SPACING := 32.0 # was 36.0
 const POINT_MASS := 1.0
 const SPRING_STIFFNESS := 18.0
 const SHEAR_STIFFNESS := 10.0
 const SPRING_DAMPING := 0.95
-const GRAVITY := Vector2.ZERO
+const GRAVITY := Vector2.ZERO # was something, but we don't want it
 const POINTER_RADIUS := 110.0
-const POINTER_STRENGTH := 2200.0
+const POINTER_STRENGTH := 3300.0
+const POINTER_MULTI_BUTTON_STRENGTH := 3.0
 const POINTER_DAMPING := 0.25
-const EDGE_RESTORING_FORCE := 2.0
+const EDGE_RESTORING_FORCE := 0.0 # was 2.0 applied to top row but we don't want it
 const DEFAULT_POINTER_ID := "default"
 
 var _points: Array[SlimePoint] = []
 var _connections: Array = []
 var _shear_connections: Array = []
 var _pointer_map: Dictionary = {}
-var _device_pointer_keys: Dictionary = {}
-var _multi_node: Node = null
+var _device_pointer_keys: Dictionary[int, String] = {}
+var _multi_mouse: Node = null
 var _multi_enabled := false
 
 class SlimePoint:
@@ -34,23 +35,115 @@ class PointerState:
 	var position := Vector2.ZERO
 	var target := Vector2.ZERO
 	var velocity := Vector2.ZERO
-	var pressed := false
+	var pressed_left := false
+	var pressed_right := false
 	var color := Color(0.4, 0.8, 1.0)
 
 func _ready() -> void:
-	_build_grid()
-	_ensure_pointer(DEFAULT_POINTER_ID)
-	_setup_multi_mouse()
+	_build_radial_net()
+	#_build_grid()
+	
+	Input.mouse_mode = Input.MOUSE_MODE_CONFINED_HIDDEN
+	
+	_setup_multi_mouse("MultiMouse")
+	if not _multi_enabled:
+		_ensure_pointer(DEFAULT_POINTER_ID)
 	set_physics_process(true)
+	
+func _process(delta: float) -> void:
+	if Input.is_action_just_pressed("ui_close_dialog"):
+		get_tree().quit()
+	if Input.is_action_just_pressed("slime_circle"):
+		_build_radial_net()
+	if Input.is_action_just_pressed("slime_grid"):
+		_build_grid()
 
 func _exit_tree() -> void:
 	_disable_multi_mouse()
+
+func _build_radial_net() -> void:
+	_points.clear()
+	_connections.clear()
+	_shear_connections.clear()
+		
+	var origin := Vector2(0, -40)
+	var ring_count := 6# GRID_ROWS
+	var base_segments := 6 # Number of points in the first ring
+	
+	# 1. Create Center Point
+	var center := SlimePoint.new()
+	center.position = origin
+	center.anchor = origin
+	center.mass = POINT_MASS
+	center.anchor_strength = EDGE_RESTORING_FORCE
+	_points.append(center)
+	
+	#var ring_start_index := [0] # Tracks where each ring begins in the array
+	var ring_start_index: Array[int] = [0]
+
+	# 2. Create Rings
+	for r in range(1, ring_count + 1):
+		ring_start_index.append(_points.size())
+		var radius := r * GRID_SPACING
+		# Increase points per ring to maintain consistent density
+		var segments := base_segments * r 
+		
+		for s in range(segments):
+			var p := SlimePoint.new()
+			var angle := (TAU / segments) * s
+			p.position = origin + Vector2(cos(angle), sin(angle)) * radius
+			p.anchor = p.position
+			p.mass = POINT_MASS
+			_points.append(p)
+
+	# 3. Connect Points
+	for r in range(ring_count + 1):
+		var current_ring_start := ring_start_index[r]
+		var current_ring_size := 1 if r == 0 else base_segments * r
+		
+		for s in range(current_ring_size):
+			var i := current_ring_start + s
+			
+			# A. Connect Ring Neighbors (Circular)
+			if r > 0:
+				var next_s := (s + 1) % current_ring_size
+				_connections.append([i, current_ring_start + next_s, (radius_dist(i, current_ring_start + next_s)), SPRING_STIFFNESS])
+			
+			# B. Connect to Outer Ring (Radial)
+			if r > 0 and r <= ring_count:
+				var inner_ring_start := ring_start_index[r - 1]
+				var inner_ring_size := base_segments * (r - 1)
+				# Find the closest point on the inner ring
+				var inner_ratio := float(inner_ring_size) / current_ring_size
+				var inner_idx: int = inner_ring_start + floor(s * inner_ratio)
+				#_connections.append([i, inner_idx, GRID_SPACING, SPRING_STIFFNESS])
+				_shear_connections.append([i, inner_idx, GRID_SPACING * 1.5, SHEAR_STIFFNESS])
+				if r > 1:
+					# Shear connection to the next point on inner ring
+					var inner_next := inner_ring_start + (int(floor(s * inner_ratio) + 1) % inner_ring_size)
+					_shear_connections.append([i, inner_next, GRID_SPACING * 1.5, SHEAR_STIFFNESS])
+
+				
+				
+			# B. Connect to Outer Ring (Radial)
+			if r < ring_count and 1==2:
+				var outer_ring_start := ring_start_index[r + 1]
+				var outer_ring_size := base_segments * (r + 1)
+				# Find the closest point on the outer ring
+				var ratio := float(outer_ring_size) / current_ring_size
+				var outer_idx: int = outer_ring_start + floor(s * ratio)
+				_connections.append([i, outer_idx, GRID_SPACING, SPRING_STIFFNESS])
+				# Shear connection to the next point on outer ring
+				var outer_next := outer_ring_start + (int(floor(s * ratio) + 1) % outer_ring_size)
+				_shear_connections.append([i, outer_next, GRID_SPACING * 1.5, SHEAR_STIFFNESS])
+func radius_dist(a: int, b: int) -> float:
+	return _points[a].position.distance_to(_points[b].position)
 
 func _build_grid() -> void:
 	_points.clear()
 	_connections.clear()
 	_shear_connections.clear()
-	var origin := Vector2(-((GRID_COLS - 1) * GRID_SPACING) * 0.5, -40)
+	var origin := Vector2(-((GRID_COLS - 1) * GRID_SPACING) * 0.5, -((GRID_ROWS - 1) * GRID_SPACING) * 0.5)
 	for y in range(GRID_ROWS):
 		for x in range(GRID_COLS):
 			var p := SlimePoint.new()
@@ -74,35 +167,36 @@ func _build_grid() -> void:
 			if x > 0 and y < GRID_ROWS - 1:
 				_shear_connections.append([idx, idx + GRID_COLS - 1, GRID_SPACING * sqrt(2), SHEAR_STIFFNESS])
 
-func _setup_multi_mouse() -> void:
+func _setup_multi_mouse(path: NodePath = "/root/MultiMouse") -> void:
+	# Default path is for autoload	
 	if not Engine.has_singleton("MultiMouseServer"):
 		return
-	_multi_node = get_node_or_null("/root/MultiMouse")
-	if _multi_node == null:
+	_multi_mouse = get_node_or_null(path)
+	if _multi_mouse == null:
 		return
-	if _multi_node.motion.is_connected(_on_multi_motion) == false:
-		_multi_node.motion.connect(_on_multi_motion)
-	if _multi_node.button.is_connected(_on_multi_button) == false:
-		_multi_node.button.connect(_on_multi_button)
-	if _multi_node.device_disconnected.is_connected(_on_multi_device_disconnected) == false:
-		_multi_node.device_disconnected.connect(_on_multi_device_disconnected)
-	if _multi_node.has_method("attach_to_window"):
-		_multi_node.attach_to_window(0)
-	if _multi_node.has_method("enable"):
-		_multi_node.enable()
+	if _multi_mouse.motion.is_connected(_on_multi_motion) == false:
+		_multi_mouse.motion.connect(_on_multi_motion)
+	if _multi_mouse.button.is_connected(_on_multi_button) == false:
+		_multi_mouse.button.connect(_on_multi_button)
+	if _multi_mouse.device_disconnected.is_connected(_on_multi_device_disconnected) == false:
+		_multi_mouse.device_disconnected.connect(_on_multi_device_disconnected)
+	if _multi_mouse.has_method("attach_to_window"):
+		_multi_mouse.attach_to_window(0)
+	if _multi_mouse.has_method("enable"):
+		_multi_mouse.enable()
 	_multi_enabled = true
 
 func _disable_multi_mouse() -> void:
-	if _multi_node:
-		if _multi_node.motion.is_connected(_on_multi_motion):
-			_multi_node.motion.disconnect(_on_multi_motion)
-		if _multi_node.button.is_connected(_on_multi_button):
-			_multi_node.button.disconnect(_on_multi_button)
-		if _multi_node.device_disconnected.is_connected(_on_multi_device_disconnected):
-			_multi_node.device_disconnected.disconnect(_on_multi_device_disconnected)
-		if _multi_node.has_method("disable"):
-			_multi_node.disable()
-	_multi_node = null
+	if _multi_mouse:
+		if _multi_mouse.motion.is_connected(_on_multi_motion):
+			_multi_mouse.motion.disconnect(_on_multi_motion)
+		if _multi_mouse.button.is_connected(_on_multi_button):
+			_multi_mouse.button.disconnect(_on_multi_button)
+		if _multi_mouse.device_disconnected.is_connected(_on_multi_device_disconnected):
+			_multi_mouse.device_disconnected.disconnect(_on_multi_device_disconnected)
+		if _multi_mouse.has_method("disable"):
+			_multi_mouse.disable()
+	_multi_mouse = null
 	_multi_enabled = false
 	_device_pointer_keys.clear()
 	_remove_non_default_pointers()
@@ -121,6 +215,8 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 func _update_default_pointer_target() -> void:
+	if _multi_enabled:
+		return
 	var viewport := get_viewport()
 	if viewport == null:
 		return
@@ -159,13 +255,15 @@ func _apply_pointer_forces(delta: float) -> void:
 	for pointer: PointerState in _pointer_states():
 		pointer.velocity = (pointer.velocity * (1.0 - POINTER_DAMPING)) + (pointer.target - pointer.position)
 		pointer.position += pointer.velocity * delta * 8.0
-		if not pointer.pressed:
+		if not (pointer.pressed_left or pointer.pressed_right):
 			continue
 		for p: SlimePoint in _points:
 			var offset := p.position - pointer.position
 			var dist := offset.length()
 			if dist < POINTER_RADIUS and dist > 0.001:
 				var strength := pow(1.0 - dist / POINTER_RADIUS, 2)
+				if pointer.pressed_left and pointer.pressed_right:
+					strength = strength * POINTER_MULTI_BUTTON_STRENGTH
 				var push := offset.normalized() * POINTER_STRENGTH * strength
 				p.force += push
 
@@ -178,6 +276,8 @@ func _integrate(delta: float) -> void:
 
 func _screen_to_sim(screen_pos: Vector2) -> Vector2:
 	return screen_pos - get_viewport_rect().size * 0.5
+func _sim_to_screen(sim_pos: Vector2) -> Vector2:
+	return sim_pos + get_viewport_rect().size * 0.5
 
 func _pointer_states() -> Array:
 	return _pointer_map.values()
@@ -195,7 +295,7 @@ func _ensure_pointer(key: Variant) -> PointerState:
 func _color_for_pointer(key: Variant) -> Color:
 	if key == DEFAULT_POINTER_ID:
 		return Color(0.4, 0.8, 1.0)
-	var hue := float(abs(hash(key)) % 360) / 360.0
+	var hue := float(abs(hash(key)) % 8) / 8.0
 	return Color.from_hsv(hue, 0.6, 0.9)
 
 func _remove_pointer(key: Variant) -> void:
@@ -205,12 +305,16 @@ func _remove_pointer(key: Variant) -> void:
 		_pointer_map.erase(key)
 
 func _input(event: InputEvent) -> void:
+	if _multi_enabled:
+		return
 	var pointer := _primary_pointer()
 	if event is InputEventMouseMotion:
 		pointer.target = _screen_to_sim(event.position)
 	elif event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
-			pointer.pressed = event.pressed
+			pointer.pressed_left = event.pressed
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			pointer.pressed_right = event.pressed
 
 func _draw() -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
@@ -233,14 +337,31 @@ func _draw() -> void:
 		draw_circle(pointer_screen, 12, pointer.color)
 		draw_circle(pointer_screen, POINTER_RADIUS, halo)
 
+func _confine_pointer_target(pointer: PointerState) -> void:
+	var target = _sim_to_screen(pointer.target)
+	var x = target.x;
+	var y = target.y;
+	if x < 0:
+		x = 0
+	if x >= get_viewport_rect().size.x:
+		x = get_viewport_rect().size.x - 1
+	if y < 0:
+		y = 0
+	if y >= get_viewport_rect().size.y:
+		y = get_viewport_rect().size.y - 1
+	pointer.target = _screen_to_sim(Vector2(x, y))
+
 func _on_multi_motion(event: InputEventMouseMotion) -> void:
 	var pointer := _ensure_pointer(_pointer_key_from_event(event))
 	pointer.target += event.relative
+	_confine_pointer_target(pointer)
 
 func _on_multi_button(event: InputEventMouseButton) -> void:
 	var pointer := _ensure_pointer(_pointer_key_from_event(event))
 	if event.button_index == MOUSE_BUTTON_LEFT:
-		pointer.pressed = event.pressed
+		pointer.pressed_left = event.pressed
+	elif event.button_index == MOUSE_BUTTON_RIGHT:
+		pointer.pressed_right = event.pressed
 
 func _on_multi_device_disconnected(device_id: int) -> void:
 	if _device_pointer_keys.has(device_id):

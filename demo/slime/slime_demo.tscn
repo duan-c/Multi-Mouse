@@ -1,6 +1,23 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://do3tmcbv8x8ie"]
 
-[ext_resource type="Script" path="res://slime/slime_demo.gd" id="1_ibfov"]
+[ext_resource type="Script" uid="uid://cua2jkn8bieay" path="res://slime/slime_demo.gd" id="1_ibfov"]
+[ext_resource type="Script" uid="uid://c4p3fm071ng7h" path="res://addons/multi_mouse/multi_mouse_manager.gd" id="2_o6itx"]
 
-[node name="SlimeDemo" type="Node2D"]
+[node name="SlimeDemo" type="Node2D" unique_id=770446883]
 script = ExtResource("1_ibfov")
+
+[node name="Label" type="Label" parent="." unique_id=1202175253]
+offset_right = 40.0
+offset_bottom = 23.0
+text = "Multi-Mouse Slime Demo 
+
+Hold any mouse button to push
+Hold multiple mouse buttons to push harder
+
+ESC - Exit
+1 - Circle
+2 - Grid"
+
+[node name="MultiMouse" type="Node" parent="." unique_id=1978392224]
+script = ExtResource("2_o6itx")
+metadata/_custom_type_script = "uid://c4p3fm071ng7h"

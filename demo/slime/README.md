@@ -9,7 +9,7 @@ This folder contains a prototype Godot 4 scene for the multi-pointer slime toy.
 
 ## How it works
 
-- Creates a 10×8 grid of points ("particles") spaced 36 px apart.
+- Creates a 12×12 grid of points ("particles") spaced 36 px apart.
 - Connects horizontal/vertical neighbors with strong springs and diagonals with softer shear springs.
 - Applies gravity, light anchor force on the top row (so the blob doesn't float away), and damping.
 - A virtual pointer body follows the mouse; while the left button is held, any particles within a 90 px radius receive a push force toward the pointer.
