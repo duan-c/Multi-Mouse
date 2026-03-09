@@ -22,6 +22,10 @@ var _pointer_map: Dictionary = {}
 var _device_pointer_keys: Dictionary[int, String] = {}
 var _multi_mouse: Node = null
 var _multi_enabled := false
+var _mesh_enabled := false
+var _mesh_instance: MeshInstance2D
+var _mesh: ImmediateMesh
+@export var mesh_texture: Texture2D
 
 class SlimePoint:
 	var position: Vector2
@@ -30,6 +34,7 @@ class SlimePoint:
 	var mass: float = 1.0
 	var anchor: Vector2
 	var anchor_strength: float = 0.0
+	var uv: Vector2 = Vector2.ZERO
 
 class PointerState:
 	var position := Vector2.ZERO
@@ -44,6 +49,18 @@ func _ready() -> void:
 	#_build_grid()
 	
 	Input.mouse_mode = Input.MOUSE_MODE_CONFINED_HIDDEN
+	
+	_mesh_instance = MeshInstance2D.new()
+	_mesh = ImmediateMesh.new()
+	_mesh_instance.mesh = _mesh
+	_mesh_instance.z_index = -1
+	add_child(_mesh_instance)
+	_update_mesh_origin()
+	if mesh_texture:
+		var mat := StandardMaterial2D.new()
+		mat.albedo_texture = mesh_texture
+		mat.use_texture_repeat = true
+		_mesh_instance.material = mat
 	
 	_setup_multi_mouse("MultiMouse")
 	if not _multi_enabled:
@@ -65,6 +82,7 @@ func _build_radial_net() -> void:
 	_points.clear()
 	_connections.clear()
 	_shear_connections.clear()
+	_mesh_enabled = false
 		
 	var origin := Vector2(0, -40)
 	var ring_count := 6# GRID_ROWS
@@ -153,6 +171,7 @@ func _build_grid() -> void:
 			p.mass = POINT_MASS
 			if y == 0:
 				p.anchor_strength = EDGE_RESTORING_FORCE
+			p.uv = Vector2(float(x) / (GRID_COLS - 1), float(y) / (GRID_ROWS - 1))
 			_points.append(p)
 
 	for y in range(GRID_ROWS):
@@ -166,6 +185,9 @@ func _build_grid() -> void:
 				_shear_connections.append([idx, idx + GRID_COLS + 1, GRID_SPACING * sqrt(2), SHEAR_STIFFNESS])
 			if x > 0 and y < GRID_ROWS - 1:
 				_shear_connections.append([idx, idx + GRID_COLS - 1, GRID_SPACING * sqrt(2), SHEAR_STIFFNESS])
+
+	_mesh_enabled = true
+	_update_mesh()
 
 func _setup_multi_mouse(path: NodePath = "/root/MultiMouse") -> void:
 	# Default path is for autoload	
@@ -212,6 +234,7 @@ func _physics_process(delta: float) -> void:
 	_apply_connections(delta)
 	_apply_pointer_forces(delta)
 	_integrate(delta)
+	_update_mesh()
 	queue_redraw()
 
 func _update_default_pointer_target() -> void:
@@ -375,3 +398,40 @@ func _pointer_key_from_event(event: InputEvent) -> String:
 		key = str(event.get_meta("device_guid"))
 	_device_pointer_keys[event.device] = key
 	return key
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED:
+		_update_mesh_origin()
+
+func _update_mesh_origin() -> void:
+	if _mesh_instance:
+		_mesh_instance.position = get_viewport_rect().size * 0.5
+
+func _update_mesh() -> void:
+	if _mesh == null or _mesh_instance == null:
+		return
+	_mesh.clear_surfaces()
+	if not _mesh_enabled:
+		return
+	_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
+	for y in range(GRID_ROWS - 1):
+		for x in range(GRID_COLS - 1):
+			var idx00 := y * GRID_COLS + x
+			var idx10 := y * GRID_COLS + (x + 1)
+			var idx01 := (y + 1) * GRID_COLS + x
+			var idx11 := (y + 1) * GRID_COLS + (x + 1)
+			_add_mesh_triangle(idx00, idx10, idx11)
+			_add_mesh_triangle(idx00, idx11, idx01)
+	_mesh.surface_end()
+
+func _add_mesh_triangle(a: int, b: int, c: int) -> void:
+	_add_mesh_vertex(a)
+	_add_mesh_vertex(b)
+	_add_mesh_vertex(c)
+
+func _add_mesh_vertex(idx: int) -> void:
+	if idx < 0 or idx >= _points.size():
+		return
+	var p: SlimePoint = _points[idx]
+	var pos := Vector3(p.position.x, p.position.y, 0.0)
+	_mesh.surface_add_vertex(pos, Vector3(0, 0, 1), Color(1, 1, 1, 1), p.uv)
