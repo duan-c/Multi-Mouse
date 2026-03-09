@@ -27,8 +27,8 @@ var _mesh_instance: MeshInstance2D
 var _mesh: ImmediateMesh
 var _mesh_triangles: Array = []
 @export var mesh_texture: Texture2D
-var _show_nodes := true
-var _show_connections := true
+var _show_nodes := false
+var _show_connections := false
 
 class SlimePoint:
 	var position: Vector2
@@ -129,12 +129,12 @@ func _build_radial_net() -> void:
 				_connections.append([i, current_ring_start + next_s, radius_dist(i, current_ring_start + next_s), SPRING_STIFFNESS])
 			if r > 0 and r <= ring_count:
 				var inner_ring_start := ring_start_index[r - 1]
-				var inner_ring_size := max(1, base_segments * (r - 1))
+				var inner_ring_size := int(max(1, base_segments * (r - 1)))
 				var inner_ratio := float(inner_ring_size) / current_ring_size
-				var inner_idx := inner_ring_start + int(floor(s * inner_ratio) % inner_ring_size)
+				var inner_idx := inner_ring_start + int(int(floor(s * inner_ratio)) % inner_ring_size)
 				_shear_connections.append([i, inner_idx, GRID_SPACING * 1.2, SHEAR_STIFFNESS])
 				if r > 1:
-					var inner_next := inner_ring_start + int((floor(s * inner_ratio) + 1) % inner_ring_size)
+					var inner_next := inner_ring_start + int(int(floor(s * inner_ratio) + 1) % inner_ring_size)
 					_shear_connections.append([i, inner_next, GRID_SPACING * 1.2, SHEAR_STIFFNESS])
 
 	for r in range(1, ring_count + 1):
@@ -149,11 +149,15 @@ func _build_radial_net() -> void:
 				_mesh_triangles.append([prev_ring_start, curr_idx, curr_next])
 			else:
 				var ratio := float(prev_segments) / ring_segments
-				var prev_pos := prev_ring_start + int(floor(s * ratio) % prev_segments)
-				var prev_next := prev_ring_start + int(floor((s + 1) * ratio) % prev_segments)
+				var prev_pos := prev_ring_start + int(int(floor(s * ratio)) % prev_segments)
+				var prev_next := prev_ring_start + int(int(floor((s + 1) * ratio)) % prev_segments)
 				_mesh_triangles.append([curr_idx, curr_next, prev_pos])
 				if prev_next != prev_pos:
 					_mesh_triangles.append([curr_next, prev_next, prev_pos])
+					
+func radius_dist(a: int, b: int) -> float:
+	return _points[a].position.distance_to(_points[b].position)
+
 func _build_grid() -> void:
 	_points.clear()
 	_connections.clear()
