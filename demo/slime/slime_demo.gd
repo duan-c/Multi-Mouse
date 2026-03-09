@@ -26,6 +26,8 @@ var _mesh_enabled := false
 var _mesh_instance: MeshInstance2D
 var _mesh: ImmediateMesh
 @export var mesh_texture: Texture2D
+var _show_nodes := true
+var _show_connections := true
 
 class SlimePoint:
 	var position: Vector2
@@ -57,10 +59,9 @@ func _ready() -> void:
 	add_child(_mesh_instance)
 	_update_mesh_origin()
 	if mesh_texture:
-		var mat := StandardMaterial2D.new()
-		mat.albedo_texture = mesh_texture
-		mat.use_texture_repeat = true
-		_mesh_instance.material = mat
+		_mesh_instance.texture = mesh_texture
+		_mesh_instance.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+
 	
 	_setup_multi_mouse("MultiMouse")
 	if not _multi_enabled:
@@ -74,6 +75,10 @@ func _process(delta: float) -> void:
 		_build_radial_net()
 	if Input.is_action_just_pressed("slime_grid"):
 		_build_grid()
+	if Input.is_action_just_pressed("slime_show_nodes"):
+		_show_nodes = not _show_nodes
+	if Input.is_action_just_pressed("slime_show_connections"):
+		_show_connections = not _show_connections
 
 func _exit_tree() -> void:
 	_disable_multi_mouse()
@@ -342,16 +347,18 @@ func _input(event: InputEvent) -> void:
 func _draw() -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	var offset := get_viewport_rect().size * 0.5
-	for conn in _connections:
-		var a := _points[conn[0]].position + offset
-		var b := _points[conn[1]].position + offset
-		draw_line(a, b, Color(0.05, 0.05, 0.2), 4)
-	for conn in _shear_connections:
-		var a := _points[conn[0]].position + offset
-		var b := _points[conn[1]].position + offset
-		draw_line(a, b, Color(0.09, 0.09, 0.3), 2)
-	for p in _points:
-		draw_circle(p.position + offset, 6, Color(0.7, 0.7, 0.8))
+	if _show_connections:
+		for conn in _connections:
+			var a := _points[conn[0]].position + offset
+			var b := _points[conn[1]].position + offset
+			draw_line(a, b, Color(0.05, 0.05, 0.2), 4)
+		for conn in _shear_connections:
+			var a := _points[conn[0]].position + offset
+			var b := _points[conn[1]].position + offset
+			draw_line(a, b, Color(0.09, 0.09, 0.3), 2)
+	if _show_nodes:
+		for p in _points:
+			draw_circle(p.position + offset, 6, Color(0.7, 0.7, 0.8))
 
 	for pointer: PointerState in _pointer_states():
 		var pointer_screen := pointer.position + offset
@@ -400,7 +407,7 @@ func _pointer_key_from_event(event: InputEvent) -> String:
 	return key
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_RESIZED:
+	if what == Control.NOTIFICATION_RESIZED:
 		_update_mesh_origin()
 
 func _update_mesh_origin() -> void:
