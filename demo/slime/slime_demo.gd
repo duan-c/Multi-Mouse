@@ -25,6 +25,7 @@ var _multi_enabled := false
 var _mesh_enabled := false
 var _mesh_instance: MeshInstance2D
 var _mesh: ImmediateMesh
+var _mesh_triangles: Array = []
 @export var mesh_texture: Texture2D
 var _show_nodes := true
 var _show_connections := true
@@ -87,85 +88,77 @@ func _build_radial_net() -> void:
 	_points.clear()
 	_connections.clear()
 	_shear_connections.clear()
-	_mesh_enabled = false
-		
-	var origin := Vector2(0, -40)
-	var ring_count := 6# GRID_ROWS
-	var base_segments := 6 # Number of points in the first ring
-	
-	# 1. Create Center Point
+	_mesh_triangles.clear()
+	_mesh_enabled = true
+
+	var origin := Vector2.ZERO
+	var ring_count := 6
+	var base_segments := 6
+
 	var center := SlimePoint.new()
 	center.position = origin
 	center.anchor = origin
 	center.mass = POINT_MASS
 	center.anchor_strength = EDGE_RESTORING_FORCE
+	center.uv = Vector2(0.5, 0.5)
 	_points.append(center)
-	
-	#var ring_start_index := [0] # Tracks where each ring begins in the array
+
 	var ring_start_index: Array[int] = [0]
 
-	# 2. Create Rings
 	for r in range(1, ring_count + 1):
 		ring_start_index.append(_points.size())
 		var radius := r * GRID_SPACING
-		# Increase points per ring to maintain consistent density
-		var segments := base_segments * r 
-		
+		var segments := base_segments * r
 		for s in range(segments):
 			var p := SlimePoint.new()
 			var angle := (TAU / segments) * s
-			p.position = origin + Vector2(cos(angle), sin(angle)) * radius
+			var dir := Vector2(cos(angle), sin(angle))
+			p.position = origin + dir * radius
 			p.anchor = p.position
 			p.mass = POINT_MASS
+			p.uv = Vector2(dir.x * 0.5 + 0.5, dir.y * 0.5 + 0.5)
 			_points.append(p)
 
-	# 3. Connect Points
 	for r in range(ring_count + 1):
 		var current_ring_start := ring_start_index[r]
 		var current_ring_size := 1 if r == 0 else base_segments * r
-		
 		for s in range(current_ring_size):
 			var i := current_ring_start + s
-			
-			# A. Connect Ring Neighbors (Circular)
 			if r > 0:
 				var next_s := (s + 1) % current_ring_size
-				_connections.append([i, current_ring_start + next_s, (radius_dist(i, current_ring_start + next_s)), SPRING_STIFFNESS])
-			
-			# B. Connect to Outer Ring (Radial)
+				_connections.append([i, current_ring_start + next_s, radius_dist(i, current_ring_start + next_s), SPRING_STIFFNESS])
 			if r > 0 and r <= ring_count:
 				var inner_ring_start := ring_start_index[r - 1]
-				var inner_ring_size := base_segments * (r - 1)
-				# Find the closest point on the inner ring
+				var inner_ring_size := max(1, base_segments * (r - 1))
 				var inner_ratio := float(inner_ring_size) / current_ring_size
-				var inner_idx: int = inner_ring_start + floor(s * inner_ratio)
-				#_connections.append([i, inner_idx, GRID_SPACING, SPRING_STIFFNESS])
-				_shear_connections.append([i, inner_idx, GRID_SPACING * 1.5, SHEAR_STIFFNESS])
+				var inner_idx := inner_ring_start + int(floor(s * inner_ratio) % inner_ring_size)
+				_shear_connections.append([i, inner_idx, GRID_SPACING * 1.2, SHEAR_STIFFNESS])
 				if r > 1:
-					# Shear connection to the next point on inner ring
-					var inner_next := inner_ring_start + (int(floor(s * inner_ratio) + 1) % inner_ring_size)
-					_shear_connections.append([i, inner_next, GRID_SPACING * 1.5, SHEAR_STIFFNESS])
+					var inner_next := inner_ring_start + int((floor(s * inner_ratio) + 1) % inner_ring_size)
+					_shear_connections.append([i, inner_next, GRID_SPACING * 1.2, SHEAR_STIFFNESS])
 
-				
-				
-			# B. Connect to Outer Ring (Radial)
-			if r < ring_count and 1==2:
-				var outer_ring_start := ring_start_index[r + 1]
-				var outer_ring_size := base_segments * (r + 1)
-				# Find the closest point on the outer ring
-				var ratio := float(outer_ring_size) / current_ring_size
-				var outer_idx: int = outer_ring_start + floor(s * ratio)
-				_connections.append([i, outer_idx, GRID_SPACING, SPRING_STIFFNESS])
-				# Shear connection to the next point on outer ring
-				var outer_next := outer_ring_start + (int(floor(s * ratio) + 1) % outer_ring_size)
-				_shear_connections.append([i, outer_next, GRID_SPACING * 1.5, SHEAR_STIFFNESS])
-func radius_dist(a: int, b: int) -> float:
-	return _points[a].position.distance_to(_points[b].position)
-
+	for r in range(1, ring_count + 1):
+		var ring_start := ring_start_index[r]
+		var prev_ring_start := ring_start_index[r - 1]
+		var ring_segments := base_segments * r
+		var prev_segments := 1 if r - 1 == 0 else base_segments * (r - 1)
+		for s in range(ring_segments):
+			var curr_idx := ring_start + s
+			var curr_next := ring_start + ((s + 1) % ring_segments)
+			if r == 1:
+				_mesh_triangles.append([prev_ring_start, curr_idx, curr_next])
+			else:
+				var ratio := float(prev_segments) / ring_segments
+				var prev_pos := prev_ring_start + int(floor(s * ratio) % prev_segments)
+				var prev_next := prev_ring_start + int(floor((s + 1) * ratio) % prev_segments)
+				_mesh_triangles.append([curr_idx, curr_next, prev_pos])
+				if prev_next != prev_pos:
+					_mesh_triangles.append([curr_next, prev_next, prev_pos])
 func _build_grid() -> void:
 	_points.clear()
 	_connections.clear()
 	_shear_connections.clear()
+	_mesh_triangles.clear()
 	var origin := Vector2(-((GRID_COLS - 1) * GRID_SPACING) * 0.5, -((GRID_ROWS - 1) * GRID_SPACING) * 0.5)
 	for y in range(GRID_ROWS):
 		for x in range(GRID_COLS):
@@ -421,14 +414,17 @@ func _update_mesh() -> void:
 	if not _mesh_enabled:
 		return
 	_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
-	for y in range(GRID_ROWS - 1):
-		for x in range(GRID_COLS - 1):
-			var idx00 := y * GRID_COLS + x
-			var idx10 := y * GRID_COLS + (x + 1)
-			var idx01 := (y + 1) * GRID_COLS + x
-			var idx11 := (y + 1) * GRID_COLS + (x + 1)
-			_add_mesh_triangle(idx00, idx10, idx11)
-			_add_mesh_triangle(idx00, idx11, idx01)
+	if _mesh_triangles.is_empty():
+		for y in range(GRID_ROWS - 1):
+			for x in range(GRID_COLS - 1):
+				var idx00 := y * GRID_COLS + x
+				var idx10 := y * GRID_COLS + (x + 1)
+				var idx01 := (y + 1) * GRID_COLS + x
+				var idx11 := (y + 1) * GRID_COLS + (x + 1)
+				_mesh_triangles.append([idx00, idx10, idx11])
+				_mesh_triangles.append([idx00, idx11, idx01])
+	for tri in _mesh_triangles:
+		_add_mesh_triangle(tri[0], tri[1], tri[2])
 	_mesh.surface_end()
 
 func _add_mesh_triangle(a: int, b: int, c: int) -> void:
