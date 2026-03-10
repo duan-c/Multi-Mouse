@@ -4,6 +4,8 @@ Multi-Mouse is a Godot 4 add-on that delivers raw per-device mouse input. Plug i
 multiple USB mice and each one gets its own motion stream, button events, and
 metadata so your game can treat every physical mouse as a unique player or tool.
 
+**Project home:** https://github.com/duan-c/Multi-Mouse
+
 > The Windows Raw Input backend is working end-to-end
 > (see the demos below). Linux support is still on the roadmap, so expect
 > Windows-only binaries for now.
