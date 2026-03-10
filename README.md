@@ -67,11 +67,13 @@ Both demos live inside `demo/project.godot` and have their own README files.
 - **Simple demo** (`demo/simple`)
   - Shows the bare-minimum integration: attach the node, print motion/button
     events, quit with `Esc`.
+  ![Simple demo screenshot](docs/screenshots/simple_demo.png)
 - **Slime demo** (`demo/slime`)
   - A physics net you can poke with one or many mice. Press `1` for a radial
     mesh, `2` for a grid, `C` to toggle springs/connections, and `N` to toggle
     the node overlay. Holding multiple buttons lets you “push harder”, and the
     `mesh_texture` export makes it easy to drop in any tileable membrane art.
+  ![Slime demo screenshot](docs/screenshots/slime_demo.png)
 
 > Default slime membrane texture: “Handpainted tileable textures 512×512 – ooz_slime.png” by DeadKir (CC0) via OpenGameArt.
 

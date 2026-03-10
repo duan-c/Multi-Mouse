@@ -15,6 +15,8 @@ at the same time and the simulation reacts to each pointer independently.
 
 Each pointer gets its own colour and halo so you can tell which device is applying force.
 
+![Slime demo screenshot](../../docs/screenshots/slime_demo.png)
+
 A new exported `mesh_texture` property lets you drop in any tileable texture for
 the membrane. Leaving it empty still renders the polygon with a solid color.
 

@@ -17,6 +17,8 @@ verify device IDs before integrating into your game.
 3. Run the `Simple` scene (`demo/simple/demo.tscn`). The overlay immediately lists every
    device that reports motion/button input.
 
+![Simple demo screenshot](../../docs/screenshots/simple_demo.png)
+
 ## How it works
 
 `demo.gd` looks for a `MultiMouse` node in the scene, attaches it to the window,
