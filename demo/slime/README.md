@@ -8,12 +8,12 @@ at the same time and the simulation reacts to each pointer independently.
 - `Esc` – exit.
 - `1` – switch to the radial “circle” mesh.
 - `2` – switch to the rectangular grid mesh.
+- `N` – show/hide nodes.
+- `C` – show/hide connections.
 - Hold any mouse button to push the slime. Hold multiple buttons on the same
   mouse to push harder (the force stacks).
 
-The demo now keeps the window focused and no longer requires you to keep the
-mouse still while initialising the backend. Each pointer gets its own colour and
-halo so you can tell which device is applying force.
+Each pointer gets its own colour and halo so you can tell which device is applying force.
 
 A new exported `mesh_texture` property lets you drop in any tileable texture for
 the membrane. Leaving it empty still renders the polygon with a solid color.
@@ -28,3 +28,6 @@ the membrane. Leaving it empty still renders the polygon with a solid color.
 
 This is a good reference if you want to build a local-multiplayer sandbox or any
 interaction where each player controls their own cursor.
+
+
+
