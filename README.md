@@ -34,7 +34,7 @@ Multi-Mouse/
 
 1. Clone the repo and fetch submodules:
    ```bash
-   git clone https://github.com/your-org/Multi-Mouse.git
+   git clone https://github.com/duan-c/Multi-Mouse.git
    cd Multi-Mouse
    git submodule update --init --recursive
    ```
@@ -69,7 +69,11 @@ Both demos live inside `demo/project.godot` and have their own README files.
     events, quit with `Esc`.
 - **Slime demo** (`demo/slime`)
   - A physics net you can poke with one or many mice. Press `1` for a radial
-    mesh, `2` for a grid. Holding multiple buttons lets you “push harder”.
+    mesh, `2` for a grid, `C` to toggle springs/connections, and `N` to toggle
+    the node overlay. Holding multiple buttons lets you “push harder”, and the
+    `mesh_texture` export makes it easy to drop in any tileable membrane art.
+
+> Default slime membrane texture: “Handpainted tileable textures 512×512 – ooz_slime.png” by DeadKir (CC0) via OpenGameArt.
 
 ## Building
 

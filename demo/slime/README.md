@@ -18,6 +18,13 @@ Each pointer gets its own colour and halo so you can tell which device is applyi
 A new exported `mesh_texture` property lets you drop in any tileable texture for
 the membrane. Leaving it empty still renders the polygon with a solid color.
 
+## Assets
+
+The default membrane art ships from the **“Handpainted tileable textures 512×512”** pack by
+[DeadKir](https://opengameart.org/users/deadkir) (CC0) on OpenGameArt — file `ooz_slime.png`.
+Swap in your own tileable texture via the `mesh_texture` export on the root `Slime`
+node if you need a different style.
+
 ## Multi-Mouse integration
 
 `slime_demo.gd` shows how to:
