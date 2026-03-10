@@ -6,9 +6,8 @@ metadata so your game can treat every physical mouse as a unique player or tool.
 
 **Project home:** https://github.com/duan-c/Multi-Mouse
 
-> The Windows Raw Input backend is working end-to-end
-> (see the demos below). Linux support is still on the roadmap, so expect
-> Windows-only binaries for now.
+> Windows (Raw Input) and Linux (ManyMouse) backends are working end-to-end
+> (see the demos below). macOS support is still on the roadmap.
 
 ## Highlights
 
@@ -114,17 +113,16 @@ Both demos live inside `demo/project.godot` and have their own README files.
 
 - **Windows** – use `scripts/build_windows.ps1`. It runs SCons for `godot-cpp`,
   configures CMake, and copies the resulting `multi_mouse.dll` into the plugin.
-- **Linux** – `scripts/build_linux.sh` contains the equivalent flow, but the
-  backend is still stubbed. Only build here if you are hacking on the future
-  Linux support.
+- **Linux** – `scripts/build_linux.sh` mirrors the same steps (godot-cpp + CMake)
+  and drops `libmulti_mouse.linux.<target>.x86_64.so` into the add-on.
 
 ## Roadmap
 
 - ✅ Windows Raw Input backend with hotplug + per-device events
-- ✅ Drop-in `MultiMouse` node (no global autoload requirement)
-- ✅ Simple + Slime demo updates
-- 🔄 Better diagnostics UI and asset-library packaging
-- 🔜 Linux backend (ManyMouse/libinput) and macOS support
+- ✅ Linux backend (ManyMouse) with prebuilt `.so` binaries
+- ✅ Drop-in `MultiMouse` node + Simple/Slime/Pong demos
+- 🔄 Better diagnostics UI, logging, and asset-library packaging
+- 🔜 macOS backend (hidmanager/hidutilities) and broader driver coverage
 
 ## License
 
