@@ -62,6 +62,32 @@ Multi-Mouse/
        print("Mouse", event.device, "moved", event.relative)
    ```
 
+## Quick start (Linux)
+
+Dependencies: `cmake`, `ninja` or GNU Make, `scons`, a C/C++ toolchain, and the X11 + Xi development headers. On Ubuntu/Debian:
+
+```bash
+sudo apt install build-essential python3-pip scons cmake libx11-dev libxi-dev
+```
+
+1. Clone the repo and submodules (same as Windows).
+2. Build the debug `godot-cpp` and native library:
+   ```bash
+   ./scripts/build_linux.sh
+   ```
+3. Build the release variant:
+   ```bash
+   TARGET=template_release ./scripts/build_linux.sh
+   ```
+   Each run drops `libmulti_mouse.linux.<target>.x86_64.so` into `addons/multi_mouse/bin/linux/` so the add-on can consume it immediately.
+4. Open `demo/project.godot`, enable the plugin, and run any of the scenes.
+
+### Runtime notes (Linux)
+
+- The backend uses [ManyMouse](https://github.com/icculus/manymouse) (zlib license). By default it tries the XInput2 driver so normal users don’t need `/dev/input` access.
+- To force the evdev backend (one device per `/dev/input/event*` node), export `MANYMOUSE_NO_XINPUT2=1` before launching Godot. You’ll need read access to `/dev/input/event*` (run Godot as root, add yourself to the `input` group, or drop in a udev rule).
+- Some VMs expose a single virtual pointer that XInput2 splits into “motion” and “button” slaves. If you see clicks coming from a different device ID, switch to the evdev backend as described above. On real hardware with two USB mice you’ll get one device ID per physical mouse.
+
 ## Demos
 
 Both demos live inside `demo/project.godot` and have their own README files.

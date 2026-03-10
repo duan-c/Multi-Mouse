@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(multi_mouse LANGUAGES CXX)
+project(multi_mouse LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -18,11 +18,26 @@ if(NOT GODOT_CPP_LIB)
     message(FATAL_ERROR "Set GODOT_CPP_LIB to the built godot-cpp library (e.g. extern/godot-cpp/bin/libgodot-cpp.linux.template_debug.x86_64.a)")
 endif()
 
+set(PLATFORM_SOURCES)
+if(WIN32)
+    list(APPEND PLATFORM_SOURCES
+        platform/windows/multi_mouse_backend_windows.cpp
+    )
+elseif(UNIX AND NOT APPLE)
+    list(APPEND PLATFORM_SOURCES
+        platform/linux/multi_mouse_backend_linux.cpp
+        ../extern/manymouse/manymouse.c
+        ../extern/manymouse/linux_evdev.c
+        ../extern/manymouse/x11_xinput2.c
+        ../extern/manymouse/manymouse_platform_stubs.c
+    )
+endif()
+
 add_library(multi_mouse SHARED
     register_types.cpp
     multi_mouse_server.cpp
     multi_mouse_backend.cpp
-    platform/windows/multi_mouse_backend_windows.cpp
+    ${PLATFORM_SOURCES}
 )
 
 target_include_directories(multi_mouse PRIVATE
@@ -34,10 +49,25 @@ target_include_directories(multi_mouse PRIVATE
     ${CMAKE_SOURCE_DIR}
 )
 
+if(UNIX AND NOT APPLE)
+    target_include_directories(multi_mouse PRIVATE ${CMAKE_SOURCE_DIR}/../extern/manymouse)
+endif()
+
 target_link_libraries(multi_mouse PRIVATE ${GODOT_CPP_LIB})
 
 if(WIN32)
     target_link_libraries(multi_mouse PRIVATE user32)
+elseif(UNIX AND NOT APPLE)
+    find_package(Threads REQUIRED)
+    target_link_libraries(multi_mouse PRIVATE Threads::Threads dl)
+    find_package(X11 REQUIRED)
+    if(X11_FOUND)
+        target_include_directories(multi_mouse PRIVATE ${X11_INCLUDE_DIR})
+        target_link_libraries(multi_mouse PRIVATE ${X11_LIBRARIES})
+        if(X11_Xi_LIB)
+            target_link_libraries(multi_mouse PRIVATE ${X11_Xi_LIB})
+        endif()
+    endif()
 endif()
 
 if(MSVC)
