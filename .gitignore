@@ -1,6 +1,7 @@
 # Build artifacts
 .build/
 build/
+dist/
 # keep addon binaries tracked
 bin/
 !.gitkeep
