@@ -18,8 +18,8 @@ metadata so your game can treat every physical mouse as a unique player or tool.
 - **Godot-friendly events** – the native extension emits standard
   `InputEventMouseMotion` / `InputEventMouseButton` objects that already contain
   `device`, `device_guid`, and raw deltas.
-- **Reference demos** – a minimal motion logger and a fully interactive “slime”
-  physics toy showcase how to use the node in real projects.
+- **Reference demos** – the Simple motion logger, the two-mouse Pong scene,
+  and the fully interactive Slime toy showcase how to use the node in real projects.
 
 ## Repository layout
 
@@ -70,6 +70,11 @@ Both demos live inside `demo/project.godot` and have their own README files.
   - Shows the bare-minimum integration: attach the node, print motion/button
     events, quit with `Esc`.
   ![Simple demo screenshot](docs/screenshots/simple_demo.png)
+- **Pong demo** (`demo/pong`)
+  - Local multiplayer built entirely with Multi-Mouse input. The first mouse to
+    left-click claims the left paddle, the first right-click claims the right
+    paddle, and both players can rally immediately. `Esc` exits.
+  ![Pong demo screenshot](docs/screenshots/pong_demo.png)
 - **Slime demo** (`demo/slime`)
   - A physics net you can poke with one or many mice. Press `1` for a radial
     mesh, `2` for a grid, `C` to toggle springs/connections, and `N` to toggle
